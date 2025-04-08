@@ -1,40 +1,29 @@
 <!-- myapp/templates/create_note.html -->
-{% extends 'notas/base.html' %}
-{% load static %}
+
 
 {% block title %}Crear Nueva Nota - Mi Aplicación{% endblock %}
 
 {% block head %}
-
-    <link rel="stylesheet" href="{% static 'css/create_note.css' %}">
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'notas/css/create.css' %}">
 {% endblock %}
 
 {% block content %}
     <div class="create-note-page">
-        <div class="form-header">
-            <h2>Crear Nueva Nota</h2>
-            <button type="submit" form="noteForm" class="btn btn-save">
-                <span class="icon">💾</span> Guardar
-            </button>
-        </div>
+        <h2>Crear Nueva Nota</h2>
 
-        <form method="post" enctype="multipart/form-data" class="note-form" id="noteForm">
+        <form method="post" enctype="multipart/form-data" class="note-form">
             {% csrf_token %}
-            <div class="form-field">
-                <label for="id_titulo">Título:</label>
-                {{ form.titulo }}
+            {{ form.as_p }}
+
+            
+
+            <div class="image-preview">
+                <img id="preview" src="#" alt="Vista previa" style="max-width: 100%; max-height: 100%; display: none;">
             </div>
-            <div class="form-field">
-                <label for="id_descripcion">Descripción:</label>
-                {{ form.descripcion }}
-            </div>
-            <div class="form-field">
-                <label for="id_imagen">Imagen:</label>
-                {{ form.imagen }}
-                <div class="image-preview">
-                    <img id="preview" src="#" alt="Vista previa" class="preview-image">
-                </div>
-            </div>
+
+            <br>
+            <button type="submit" class="btn btn-save">Guardar Nota</button>
         </form>
     </div>
 
@@ -64,4 +53,5 @@
             });
         });
     </script>
+        
 {% endblock %}
