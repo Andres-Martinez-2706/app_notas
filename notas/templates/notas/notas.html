@@ -1,0 +1,56 @@
+<!-- myapp/templates/notes.html -->
+{% extends "notas/base.html" %}
+{% load static %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'notas/css/notas.css' %}">
+{% endblock %}
+
+<!--
+{% block header %}
+    <header>
+        <h1>Notas</h1>
+        <nav>
+            <a href="{% url 'home' %}">Inicio</a>
+            <a href="{% url 'create' %}">Crear Nota</a>
+        </nav>
+    </header>
+{% endblock %}
+-->
+
+{% block title %}Notas - Mi Aplicación{% endblock %}
+
+{% block content %}
+    <div class="notes-header">
+        <h1>Mis Notas</h1>
+        <a href="{% url 'create' %}" class="btn btn-create">
+            <span>+</span> Nueva Nota
+        </a>
+    </div>
+
+    <div class="notes-list">
+
+        
+        {% for nota in notas %}
+            <div class="note-card">
+                <h3>
+                    <a href="{% url 'detail' nota.id %}">{{ nota.titulo }}</a>
+                </h3>
+                <p>{{ nota.descripcion|truncatewords:50|safe }}</p>
+                <div class="note-actions">
+                    <a href="{% url 'edit' nota.id %}" class="btn btn-edit">
+                        <span class="icon">✏️</span> Editar
+                    </a>
+                    <a href="{% url 'delete' nota.id %}" class="btn btn-delete">
+                        <span class="icon">🗑️</span> Eliminar
+                    </a>
+                </div>
+            </div>
+        {% empty %}
+            <p>No hay notas disponibles. ¡Crea una nueva nota!</p>
+        {% endfor %}
+        
+        
+
+    </div>
+{% endblock %}

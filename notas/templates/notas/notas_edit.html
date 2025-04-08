@@ -1,0 +1,56 @@
+<!-- myapp/templates/create_note.html -->
+
+
+{% block title %}Editar Nota - Mi Aplicación{% endblock %}
+
+{% block head %}
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'notas/css/create.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="create-note-page">
+        <h2>Editar Nota</h2>
+
+        <form method="post" enctype="multipart/form-data" class="note-form">
+            {% csrf_token %}
+            {{ form.as_p }}
+
+            
+
+            <div class="image-preview">
+                <img id="preview" src="#" alt="Vista previa" style="max-width: 100%; max-height: 100%; display: none;">
+            </div>
+
+            <br>
+            <button type="submit" class="btn btn-save">Guardar Nota</button>
+        </form>
+    </div>
+
+    {{ form.media }}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const inputImagen = document.getElementById('id_imagen');
+            const preview = document.getElementById('preview');
+        
+            inputImagen.addEventListener('change', function () {
+                const file = this.files[0];
+        
+                if (file) {
+                    const reader = new FileReader();
+        
+                    reader.onload = function (e) {
+                        preview.src = e.target.result;
+                        preview.style.display = 'block';
+                    };
+        
+                    reader.readAsDataURL(file);
+                } else {
+                    preview.src = "#";
+                    preview.style.display = 'none';
+                }
+            });
+        });
+    </script>
+{% endblock %}

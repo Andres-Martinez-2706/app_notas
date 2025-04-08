@@ -1,0 +1,105 @@
+/* myapp/static/css/profile.css */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+}
+
+.profile-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Estilos del encabezado */
+.profile-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+}
+
+.btn {
+    padding: 10px 20px;
+    text-decoration: none;
+    font-size: 16px;
+    border-radius: 5px;
+    color: white;
+    transition: background-color 0.3s;
+}
+
+.btn-back {
+    background-color: #3498db;
+}
+
+.btn-back:hover {
+    background-color: #2980b9;
+}
+
+.btn-logout {
+    background-color: #e74c3c;
+}
+
+.btn-logout:hover {
+    background-color: #c0392b;
+}
+
+/* Estilos de la sección del perfil */
+.profile-info {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.profile-icon {
+    width: 100px;
+    height: 100px;
+    background-color: #27ae60;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 40px;
+    color: white;
+    margin: 0 auto 10px;
+}
+
+.username {
+    background-color: #27ae60;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 18px;
+    display: inline-block;
+}
+
+/* Estilos de la sección de notas */
+.notes-section {
+    background-color: #e74c3c;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.notes-section h2 {
+    color: white;
+    font-size: 24px;
+    margin-bottom: 15px;
+}
+
+.notes-list {
+    list-style: none;
+    color: white;
+}
+
+.notes-list li {
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    font-size: 16px;
+}
+
+.notes-list li:last-child {
+    border-bottom: none;
+}

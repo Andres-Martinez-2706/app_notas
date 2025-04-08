@@ -1,0 +1,35 @@
+<!-- myapp/templates/base.html -->
+ {% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Mi Aplicación{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'notas/css/base.css' %}">
+    {% block head %}
+   
+    {% endblock head %}
+</head>
+<body>
+    <div class="container">
+        <!-- Barra de navegación lateral -->
+        <nav class="sidebar">
+            <ul>
+                <li><a href="{% url 'home' %}">Inicio</a></li>
+                <li><a href="{% url 'perfil' %}">Perfil</a></li>
+                <li><a href="{% url 'notas' %}">Mis Notas</a></li>
+                <li><a href="#">Cerrar Sesión</a></li>
+            </ul>
+        </nav>
+
+        <!-- Área de contenido principal -->
+        <main class="content">
+            {% block content %}
+            <!-- Este bloque será sobrescrito por otras páginas -->
+
+            {% endblock %}
+        </main>
+    </div>
+</body>
+</html>

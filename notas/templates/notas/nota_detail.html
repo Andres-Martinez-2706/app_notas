@@ -1,0 +1,42 @@
+
+<!-- myapp/templates/note_detail.html -->
+{% extends "notas/base.html" %}
+
+{% block title %}Detalles de la Nota - Mi Aplicación{% endblock %}
+
+{% block head %}
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'notas/css/detail.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="note-detail-page">
+        <!-- Botón para regresar al inicio -->
+         
+        
+        <div class="note-actions">
+            <a href="{% url 'notas' %}" class="btn btn-back">Volver Atras</a>
+            <a href="{% url 'edit' nota.id %}" class="btn btn-edit">
+                <span class="icon">✏️</span> Editar
+            </a>
+            <a href="{% url 'delete' nota.id %}" class="btn btn-delete">
+                <span class="icon">🗑️</span> Eliminar
+            </a>
+        </div>
+
+        <!-- Sección de detalles de la nota -->
+        <div class="note-cover">
+            {% if nota.imagen %}
+                <img src="{{ nota.imagen.url }}" alt="Portada de la nota">
+            {% else %}
+                <div class="no-image">Sin imagen</div>
+            {% endif %}
+        </div>
+
+        <h2 class="note-title">{{ nota.titulo }}</h2>
+
+        <div class="note-content">
+            <p>{{ nota.descripcion |safe }}</p>
+        </div>
+    </div>
+{% endblock %}

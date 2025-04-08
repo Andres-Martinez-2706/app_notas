@@ -1,0 +1,45 @@
+<!-- myapp/templates/profile.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perfil - Mi Aplicación</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'notas/css/perfil.css' %}">
+</head>
+<body>
+    <div class="profile-page">
+        <!-- Encabezado con botones -->
+        <div class="profile-header">
+            <a href="{% url 'home' %}" class="btn btn-back">Volver al Inicio</a>
+            <a href="#" class="btn btn-logout">Cerrar Sesión</a>
+        </div>
+
+        <!-- Sección del perfil -->
+        <div class="profile-info">
+            <div class="profile-icon">👤</div>
+            <div class="username">name########user</div>
+        </div>
+
+        <!-- Lista de notas -->
+        <div class="notes-section">
+            <h2>Tus Notas</h2>
+            <ul class="notes-list">
+            <li>a</li>
+            <li>b</li>
+            <li>c</li>
+            <li>d</li>
+            <li>e</li>
+            <!--
+                {% for note in notes %}
+                    <li>{{ note.title }}</li>
+                {% empty %}
+                    <li>No tienes notas creadas.</li>
+                {% endfor %}
+                -->
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

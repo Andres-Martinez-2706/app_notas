@@ -1,0 +1,70 @@
+/* myapp/static/css/create_note.css */
+.create-note-page {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    text-align: center;
+}
+
+.create-note-page h2 {
+    font-size: 28px;
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+
+.note-form {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.note-form label {
+    font-size: 16px;
+    color: #2c3e50;
+    margin-bottom: 5px;
+    display: block;
+}
+
+.note-form .form-control {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.note-form .form-control-file {
+    margin-bottom: 15px;
+}
+
+.note-form textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.image-preview {
+    width: 300px;
+    height: 200px;
+    border: 2px dashed #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+}
+
+.btn-save {
+    background-color: #27ae60;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-save:hover {
+    background-color: #219653;
+}
