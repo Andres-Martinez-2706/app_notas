@@ -46,12 +46,9 @@ def nota_detail(request, nota_id):
 
 def notas_delete(request, nota_id):
 
-    form = Nota.objects.get(id=nota_id)
-    if request.method == 'POST':
-        form.delete()
-        return redirect('notas')
-    return render(request,'notas/notas_delete.html', {'form': form})
-
+    nota = get_object_or_404(Nota, id=nota_id)
+    nota.delete()
+    return redirect('notas')
 
 
 

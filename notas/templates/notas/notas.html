@@ -41,7 +41,7 @@
                     <a href="{% url 'edit' nota.id %}" class="btn btn-edit">
                         <span class="icon">✏️</span> Editar
                     </a>
-                    <a href="{% url 'delete' nota.id %}" class="btn btn-delete">
+                    <a href="{% url 'delete' nota.id %}" class="btn btn-delete" onclick="return confirmDelete(event, this.href);">
                         <span class="icon">🗑️</span> Eliminar
                     </a>
                 </div>
@@ -49,8 +49,16 @@
         {% empty %}
             <p>No hay notas disponibles. ¡Crea una nueva nota!</p>
         {% endfor %}
-        
-        
 
     </div>
+
+    <script>
+        function confirmDelete(event, url) {
+            event.preventDefault(); // Evita la redirección inmediata
+            if (confirm("¿Estás seguro de que quieres eliminar esta nota?")) {
+                window.location.href = url; // Redirige al enlace si se confirma
+            }
+            return false; // Evita la acción por defecto si no se confirma
+        }
+    </script>
 {% endblock %}
