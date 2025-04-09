@@ -1,36 +1,24 @@
 from django.shortcuts import render,redirect,get_object_or_404
 from .forms import NotaForm
 from .models import Nota
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-
-
-def login_view(request):
-    if request.method == "POST":
-        username = request.POST["username"]
-        password = request.POST["password"]
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            next_url = request.GET.get("next")
-            if next_url:
-                return redirect(next_url)
-            return redirect("home")  # Usa el nombre de la ruta, no la URL literal
-        else:
-            return render(request, "notas/login.html", {"error": "Usuario o contraseña incorrectos"})
-    return render(request, "notas/login.html")
-
 
 def index(request):
     print(request.user)
     return render(request,'notas/base.html')
 
 def logout_view(request):
+    logout(request)  # Cierra la sesión del usuario
     return redirect("login")
 
 @login_required
 def notas_view(request):
     
-    notas = Nota.objects.order_by('-created_at')  # Muestra solo los del usuario actual
+    if request.user.is_superuser or request.user.is_staff:
+        notas = Nota.objects.order_by('-created_at')  # Muestra solo los del usuario actual
+    else:
+        notas = Nota.objects.filter(author=request.user).order_by('-created_at')
     return render(request, 'notas/notas.html', {'notas': notas})
 
 @login_required
