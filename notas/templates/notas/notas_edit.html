@@ -1,22 +1,22 @@
-<!-- myapp/templates/create_note.html -->
-
+{% extends "notas/base.html" %}
+{% load static %}
 
 {% block head %}
-    {% load static %}
     <link rel="stylesheet" href="{% static 'notas/css/create.css' %}">
 {% endblock %}
 
+{% block title %}Editar Nota{% endblock %}
+
 {% block content %}
     <div class="create-note-page">
-
+        <!-- Botón de regreso -->
         <button class="btn-back" onclick="window.history.back()">Regresar</button>
-        <h2>Editar Nota</h2>
+        
+        <h2>Crear Nueva Nota</h2>
 
         <form method="post" enctype="multipart/form-data" class="note-form">
             {% csrf_token %}
             {{ form.as_p }}
-
-            
 
             <div class="image-preview">
                 <img id="preview" src="#" alt="Vista previa" style="max-width: 100%; max-height: 100%; display: none;">
@@ -28,7 +28,9 @@
     </div>
 
     {{ form.media }}
+{% endblock %}
 
+{% block scripts %}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const inputImagen = document.getElementById('id_imagen');

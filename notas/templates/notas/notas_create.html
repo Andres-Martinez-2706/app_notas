@@ -1,12 +1,15 @@
+{% extends "notas/base.html" %}
+{% load static %}
 
 {% block head %}
-    {% load static %}
     <link rel="stylesheet" href="{% static 'notas/css/create.css' %}">
 {% endblock %}
 
+{% block title %}Crear Nota{% endblock %}
+
 {% block content %}
     <div class="create-note-page">
-        <!-- Add the Back button here -->
+        <!-- Botón de regreso -->
         <button class="btn-back" onclick="window.history.back()">Regresar</button>
         
         <h2>Crear Nueva Nota</h2>
@@ -25,7 +28,9 @@
     </div>
 
     {{ form.media }}
+{% endblock %}
 
+{% block scripts %}
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const inputImagen = document.getElementById('id_imagen');
