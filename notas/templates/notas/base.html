@@ -2,40 +2,40 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{% block title %}Mi Aplicación{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'notas/css/base.css' %}" />
-    {% block head %} {% endblock head %}
-  </head>
-  <body>
-    <div class="container">
-      <!-- Barra de navegación lateral -->
-      <nav class="sidebar">
-        <ul>
-          {% if user.is_authenticated %}
-          <li><a href="{% url 'home' %}">Inicio</a></li>
-          <li><a href="{% url 'notas' %}">Mis Notas</a></li>
-          <li><a href="{% url 'perfil' %}">Perfil</a></li>
-          <li><a href="{% url 'logout' %}">Cerrar Sesión</a></li>
-          {% else %}
-          <li><a href="{% url 'login' %}">Iniciar Sesión</a></li>
-          {% endif %}
-          
-          {% if user.is_staff %}
-          <li><a href="#">Administración</a></li>
-          {% endif %}
-        </ul>
-      </nav>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>{% block title %}Mi Aplicación{% endblock %}</title>
+		<link rel="stylesheet" href="{% static 'notas/css/base.css' %}" />
+		{% block head %} {% endblock head %}
+  	</head>
+  	<body>
+		<div class="container">
+		<!-- Barra de navegación lateral -->
+		<nav class="sidebar">
+			<ul>
+			{% if user.is_authenticated %}
+			<li><a href="{% url 'home' %}">Inicio</a></li>
+			<li><a href="{% url 'notas' %}">Mis Notas</a></li>
+			<li><a href="{% url 'perfil' %}">Perfil</a></li>
+			<li><a href="{% url 'logout' %}">Cerrar Sesión</a></li>
+			{% else %}
+			<li><a href="{% url 'login' %}">Iniciar Sesión</a></li>
+			{% endif %}
+			
+			{% if user.is_staff %}
+			<li><a href="#">Administración</a></li>
+			{% endif %}
+			</ul>
+		</nav>
 
-      <!-- Área de contenido principal -->
-      <main class="content">
-        {% block content %}
-        <!-- Este bloque será sobrescrito por otras páginas -->
+		<!-- Área de contenido principal -->
+		<main class="content">
+			{% block content %}
+			<!-- Este bloque será sobrescrito por otras páginas -->
 
-        {% endblock %}
-      </main>
-    </div>
-  </body>
+			{% endblock %}
+		</main>
+		</div>
+  	</body>
 </html>
