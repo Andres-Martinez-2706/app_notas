@@ -11,31 +11,45 @@
   	</head>
   	<body>
 		<div class="container">
-		<!-- Barra de navegación lateral -->
-		<nav class="sidebar">
-			<ul>
-			{% if user.is_authenticated %}
-			<li><a href="{% url 'home' %}">Inicio</a></li>
-			<li><a href="{% url 'notas' %}">Mis Notas</a></li>
-			<li><a href="{% url 'perfil' %}">Perfil</a></li>
-			<li><a href="{% url 'logout' %}">Cerrar Sesión</a></li>
-			{% else %}
-			<li><a href="{% url 'login' %}">Iniciar Sesión</a></li>
-			{% endif %}
 			
-			{% if user.is_staff or user.is_superuser %}
-			<li><a href="{% url 'admin:index' %}">Administración</a></li>
-			{% endif %}
-			</ul>
-		</nav>
+			<nav class="sidebar">
+				<div class="sidebar-header">
+					<h2>📚App Notas</h2>
+				</div>
+				<ul>
+				{% if user.is_authenticated %}
+				<li>
+					<a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">🏠 Inicio</a>
+				</li>
+				<li>
+					<a href="{% url 'notas' %}" class="{% if request.resolver_match.url_name == 'notas' %}active{% endif %}">📝Mis Notas</a>
+				</li>
+				<li>
+					<a href="{% url 'perfil' %}" class="{% if request.resolver_match.url_name == 'perfil' %}active{% endif %}">👤Perfil</a>
+				</li>
+				<li>
+					<a href="{% url 'logout' %}">❌Cerrar Sesión</a>
+				</li>
 
-		<!-- Área de contenido principal -->
-		<main class="content">
-			{% block content %}
-			<!-- Este bloque será sobrescrito por otras páginas -->
+				{% else %}
+				<li>
+					<a href="{% url 'login' %}" class="{% if request.resolver_match.url_name == 'login' %}active{% endif %}">✅Iniciar Sesión</a>
+				</li>
+				{% endif %}
+				
+				{% if user.is_staff or user.is_superuser %}
+				<li><a href="{% url 'admin:index' %}">🛠️Administración</a></li>
+				{% endif %}
+				</ul>
+			</nav>
 
-			{% endblock %}
-		</main>
+			<!-- Área de contenido principal -->
+			<main class="content">
+				{% block content %}
+				<!-- Este bloque será sobrescrito por otras páginas -->
+
+				{% endblock %}
+			</main>
 		</div>
   	</body>
 </html>

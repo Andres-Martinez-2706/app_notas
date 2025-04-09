@@ -22,6 +22,19 @@ body {
     color: white;
 }
 
+.sidebar-header {
+    padding: 20px;
+    text-align: center;
+    border-bottom: 1px solid #34495e;
+    margin-bottom: 20px;
+}
+
+.sidebar-header h2 {
+    margin: 0;
+    font-size: 24px;
+    color: #1abc9c; /* Color turquesa para el título */
+}
+
 .sidebar ul {
     list-style: none;
 }
@@ -41,6 +54,13 @@ body {
 
 .sidebar ul li a:hover {
     background-color: #34495e;
+}
+
+/* Estilo para la pestaña activa */
+.sidebar ul li a.active {
+    font-weight: bold;
+    background-color: #1abc9c; /* Fondo turquesa para la pestaña activa */
+    border-left: 4px solid #16a085; /* Barra lateral más oscura para énfasis */
 }
 
 /* Estilos para el contenido principal */
