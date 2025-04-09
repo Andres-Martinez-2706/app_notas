@@ -19,6 +19,7 @@ def notas_view(request):
         notas = Nota.objects.order_by('-created_at')  # Muestra solo los del usuario actual
     else:
         notas = Nota.objects.filter(author=request.user).order_by('-created_at')
+    print(notas)
     return render(request, 'notas/notas.html', {'notas': notas})
 
 @login_required
@@ -44,7 +45,7 @@ def notas_create(request):
         form = NotaForm(request.POST, request.FILES)
         if form.is_valid():
             note = form.save(commit=False)
-            note.user = request.user  # Asignar el usuario actual
+            note.author = request.user  # Asignar el usuario actual
             note.save()
             return redirect('notas')
     else:
