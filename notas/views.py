@@ -11,7 +11,8 @@ def notas_view(request):
     return render(request, 'notas/notas.html', {'notas': notas})
 
 def perfil(request):
-    return render(request,'notas/perfil.html')
+    notas = Nota.objects.order_by('-created_at')  # Muestra solo los del usuario actual
+    return render(request, 'notas/perfil.html', {'notas': notas})
 
 def notas_edit(request, nota_id):
     nota = get_object_or_404(Nota, id=nota_id)

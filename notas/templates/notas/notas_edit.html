@@ -1,8 +1,6 @@
 <!-- myapp/templates/create_note.html -->
 
 
-{% block title %}Editar Nota - Mi Aplicación{% endblock %}
-
 {% block head %}
     {% load static %}
     <link rel="stylesheet" href="{% static 'notas/css/create.css' %}">
@@ -10,6 +8,8 @@
 
 {% block content %}
     <div class="create-note-page">
+
+        <button class="btn-back" onclick="window.history.back()">Regresar</button>
         <h2>Editar Nota</h2>
 
         <form method="post" enctype="multipart/form-data" class="note-form">

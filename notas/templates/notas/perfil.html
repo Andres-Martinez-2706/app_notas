@@ -26,18 +26,13 @@
         <div class="notes-section">
             <h2>Tus Notas</h2>
             <ul class="notes-list">
-            <li>a</li>
-            <li>b</li>
-            <li>c</li>
-            <li>d</li>
-            <li>e</li>
-            <!--
-                {% for note in notes %}
-                    <li>{{ note.title }}</li>
+            
+                {% for nota in notas %}
+                    <li>{{ nota.titulo }}</li>
                 {% empty %}
                     <li>No tienes notas creadas.</li>
                 {% endfor %}
-                -->
+            
             </ul>
         </div>
     </div>

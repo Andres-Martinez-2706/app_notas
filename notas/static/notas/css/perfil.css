@@ -12,8 +12,12 @@ body {
 
 .profile-page {
     max-width: 800px;
-    margin: 0 auto;
+    margin: 20px auto; /* Added margin to give space around the card */
     padding: 20px;
+    background-color: white; /* White background for the card */
+    border: 1px solid #ddd; /* Light border for definition */
+    border-radius: 10px; /* Rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for the card effect */
 }
 
 /* Estilos del encabezado */
@@ -78,7 +82,7 @@ body {
 
 /* Estilos de la sección de notas */
 .notes-section {
-    background-color: #e74c3c;
+    background-color: #2980b9;
     padding: 20px;
     border-radius: 8px;
 }

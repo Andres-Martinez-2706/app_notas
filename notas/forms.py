@@ -8,7 +8,6 @@ class NotaForm(forms.ModelForm):
         fields = ['titulo', 'descripcion', 'imagen']
         widgets = {
             'titulo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Título'}),
-
             'imagen': forms.ClearableFileInput(attrs={'class': 'form-control-file'}),
         }
         labels = {
