@@ -1,6 +1,7 @@
 <!-- myapp/templates/notes.html -->
 {% extends "notas/base.html" %}
 {% load static %}
+{% load filters %}
 
 {% block head %}
     <link rel="stylesheet" href="{% static 'notas/css/notas.css' %}">
@@ -36,7 +37,7 @@
                 <h3>
                     <a href="{% url 'detail' nota.id %}">{{ nota.titulo }}</a>
                 </h3>
-                <p>{{ nota.descripcion|truncatewords:50|safe }}</p>
+                <p>{{ nota.descripcion|remove_images|truncatewords:50|safe }}</p>
                 <div class="note-actions">
                     <a href="{% url 'edit' nota.id %}" class="btn btn-edit">
                         <span class="icon">✏️</span> Editar
