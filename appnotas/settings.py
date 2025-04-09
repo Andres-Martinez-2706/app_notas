@@ -146,3 +146,7 @@ CKEDITOR_CONFIGS = {
             ]),
         },
 }
+
+LOGIN_REDIRECT_URL = '/login/'
+LOGINOUT_URL = '/login/'
+LOGIN_URL='/login/'
