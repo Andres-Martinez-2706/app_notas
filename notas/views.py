@@ -23,7 +23,7 @@ def notas_view(request):
 
 @login_required
 def perfil(request):
-    notas = Nota.objects.order_by('-created_at')  # Muestra solo los del usuario actual
+    notas = Nota.objects.filter(author=request.user).order_by('-created_at')  # Muestra solo los del usuario actual
     return render(request, 'notas/perfil.html', {'notas': notas})
 
 @login_required

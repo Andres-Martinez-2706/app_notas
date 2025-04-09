@@ -17,19 +17,20 @@
 					<h2>📚App Notas</h2>
 				</div>
 				<ul>
+					<li>
+						<a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">🏠 Inicio</a>
+					</li>
+					
 					{% if user.is_staff or user.is_superuser %}
 						<li><a href="{% url 'admin:index' %}">🛠️Administración</a></li>
 					{% endif %}
 
 					{% if user.is_authenticated %}
 						<li>
-							<a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">🏠 Inicio</a>
-						</li>
-						<li>
 							<a href="{% url 'notas' %}" class="{% if request.resolver_match.url_name == 'notas' %}active{% endif %}">📝Mis Notas</a>
 						</li>
 						<li>
-							<a href="{% url 'perfil' %}" class="{% if request.resolver_match.url_name == 'perfil' %}active{% endif %}">👤Perfil</a>
+							<a href="{% url 'perfil' %}" class="{% if request.resolver_match.url_name == 'perfil' %}active{% endif %}">👨🏻‍💻Perfil</a>
 						</li>
 						<li>
 							<a href="{% url 'logout' %}">❌Cerrar Sesión</a>
