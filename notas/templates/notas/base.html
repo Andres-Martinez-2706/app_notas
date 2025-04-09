@@ -23,8 +23,8 @@
 			<li><a href="{% url 'login' %}">Iniciar Sesión</a></li>
 			{% endif %}
 			
-			{% if user.is_staff %}
-			<li><a href="#">Administración</a></li>
+			{% if user.is_staff or user.is_superuser %}
+			<li><a href="{% url 'admin:index' %}">Administración</a></li>
 			{% endif %}
 			</ul>
 		</nav>
