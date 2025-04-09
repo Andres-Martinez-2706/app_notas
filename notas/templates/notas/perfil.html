@@ -1,14 +1,14 @@
-<!-- myapp/templates/profile.html -->
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Perfil - Mi Aplicación</title>
-    {% load static %}
+<!-- notas/templates/profile.html -->
+{% extends "notas/base.html" %}
+{% load static %}
+
+{% block head %}
     <link rel="stylesheet" href="{% static 'notas/css/perfil.css' %}">
-</head>
-<body>
+{% endblock %}
+
+{% block title %}Perfil - Mi Aplicación{% endblock %}
+
+{% block content %}
     <div class="profile-page">
         <!-- Encabezado con botones -->
         <div class="profile-header">
@@ -26,15 +26,12 @@
         <div class="notes-section">
             <h2>Tus Notas</h2>
             <ul class="notes-list">
-            
                 {% for nota in notas %}
                     <li>{{ nota.titulo }}</li>
                 {% empty %}
                     <li>No tienes notas creadas.</li>
                 {% endfor %}
-            
             </ul>
         </div>
     </div>
-</body>
-</html>
+{% endblock %}
