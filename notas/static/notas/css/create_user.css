@@ -1,0 +1,71 @@
+/* Estilo general del contenedor del formulario */
+#card_user {
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: #ffffff; /* Fondo gris claro */
+    border-radius: 20px;
+    box-shadow: -10px 10px 3px 5px #1abc9c8d;
+}
+
+/* Estilo del mensaje de error */
+#error {
+    color: #6C757D; /* Gris oscuro para el texto de error */
+    font-size: 16px;
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+/* Estilo del formulario */
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Estilo de los párrafos generados por form.as_p */
+form p {
+    margin-bottom: 15px;
+}
+
+/* Estilo de las etiquetas */
+form label {
+    display: block;
+    color: #6C757D; /* Gris oscuro para las etiquetas */
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+/* Estilo de los campos de entrada */
+form input[type="text"],
+form input[type="password"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #CED4DA; /* Borde gris claro */
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 14px;
+}
+
+/* Estilo del botón */
+#boton {
+    background-color: #3498db; /* Verde */
+    color: #FFFFFF; /* Texto blanco */
+    border: none;
+    padding: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+#boton:hover {
+    background-color: #2974a5;
+    border: 2px solid #a0a9af; /* Verde más oscuro al pasar el mouse */
+}
+
+/* Estilo para los errores del formulario */
+form .errorlist {
+    color: #DC3545; /* Rojo para los errores */
+    font-size: 12px;
+    margin-top: 5px;
+}

@@ -1,0 +1,15 @@
+{% extends 'notas/base.html' %} {% block content %}
+{% load static %}
+{% block head %}
+<link rel="stylesheet" href="{% static 'notas/css/create_user.css' %}">
+{% endblock head %}
+
+<div id="card_user">
+  <h4 id="error">{{error}}</h4>
+  <form action="{% url 'register' %}" method="POST">
+  {% csrf_token %}
+  {{form.as_p}}
+  <button id="boton" type="submit">💾Guardar</button>
+  </form>
+</div>
+{% endblock %}

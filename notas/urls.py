@@ -12,4 +12,5 @@ urlpatterns = [
     path('notas/detail/<int:nota_id>/',views.nota_detail,name='detail'),
     path("logout/", views.logout_view, name="logout"),
     path('login/', LoginView.as_view(template_name='notas/login.html'), name='login'),
+    path('register/', views.create_user, name='register'),
 ]

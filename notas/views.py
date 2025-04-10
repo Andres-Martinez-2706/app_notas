@@ -3,6 +3,24 @@ from .forms import NotaForm
 from .models import Nota
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
+
+def create_user(request):
+    if request.method == 'POST':
+        if request.POST['password1'] == request.POST['password2']:
+            try:
+                user = User.objects.create_user(username=request.POST['username'],password=request.POST['password1'])
+                user.save()
+                return redirect('notas')
+            except:       
+                return render (request, 'notas/create_user.html',{
+                    'form':UserCreationForm(),
+                    'error':"El nombre de usuario ya existe" 
+                    })
+    return render (request, 'notas/create_user.html',{'form':UserCreationForm(),'error':"contraseñas no coinciden"})
+
+    
 
 def index(request):
     print(request.user)
