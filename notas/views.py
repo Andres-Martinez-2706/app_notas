@@ -5,6 +5,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+from django.db.models import Q
 
 def create_user(request):
     if request.method == 'POST':
@@ -32,13 +33,29 @@ def logout_view(request):
 
 @login_required
 def notas_view(request):
-    
+    # Obtener el término de búsqueda
+    query = request.GET.get('q', '').strip()  # Elimina espacios vacíos
+    print("🔍 Buscando:", repr(query))  # Imprime con repr para depuración
+
+    # Filtrar notas según el tipo de usuario
     if request.user.is_superuser or request.user.is_staff:
-        notas = Nota.objects.order_by('-created_at')  # Muestra solo los del usuario actual
+        notas = Nota.objects.all()  # Superusuarios y staff ven todas las notas
     else:
-        notas = Nota.objects.filter(author=request.user).order_by('-created_at')
-    print(notas)
-    return render(request, 'notas/notas.html', {'notas': notas})
+        notas = Nota.objects.filter(author=request.user)  # Usuarios normales ven solo sus notas
+
+    # Aplicar el filtro de búsqueda si hay un término
+    if query:
+        notas = notas.filter(
+            Q(titulo__icontains=query) | Q(descripcion__icontains=query)
+        )
+
+    # Ordenar las notas por fecha de creación (más reciente primero)
+    notas = notas.order_by('-created_at')
+
+    # Depuración: Mostrar las notas filtradas
+    print("Notas filtradas:", list(notas.values('id', 'titulo', 'descripcion')))
+
+    return render(request, 'notas/notas.html', {'notas': notas, 'query': query})
 
 @login_required
 def perfil(request):

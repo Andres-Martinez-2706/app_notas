@@ -149,3 +149,49 @@ body {
 .btn-delete:hover {
     background-color: #c0392b;
 }
+
+/* Estilos para la barra de búsqueda */
+.search-bar {
+    width: 100%; /* Ocupa todo el ancho del contenedor */
+    margin-bottom: 30px; /* Espacio debajo de la barra de búsqueda */
+}
+
+.search-bar form {
+    display: flex; /* Coloca el input y el botón en la misma línea */
+    gap: 10px; /* Espacio entre el input y el botón */
+}
+
+.search-bar input[type="text"] {
+    flex: 1; /* El input ocupa todo el espacio disponible */
+    padding: 10px 15px; /* Espaciado interno */
+    font-size: 16px; /* Tamaño de fuente */
+    color: #2c3e50; /* Color del texto (azul oscuro) */
+    background-color: #ffffff; /* Fondo blanco */
+    border: 1px solid #ecf0f1; /* Borde gris claro */
+    border-radius: 8px; /* Esquinas redondeadas */
+    outline: none; /* Quita el borde de enfoque por defecto */
+    transition: border-color 0.3s; /* Transición suave para el borde */
+}
+
+.search-bar input[type="text"]::placeholder {
+    color: #7f8c8d; /* Color gris medio para el placeholder */
+}
+
+.search-bar input[type="text"]:focus {
+    border-color: #27ae60; /* Borde verde al enfocar (coincide con el botón) */
+}
+
+.search-bar button {
+    padding: 10px 20px; /* Espaciado interno */
+    font-size: 16px; /* Tamaño de fuente */
+    color: #ffffff; /* Texto blanco */
+    background-color: #27ae60; /* Fondo verde (coincide con .btn-create) */
+    border: none; /* Sin borde */
+    border-radius: 8px; /* Esquinas redondeadas */
+    cursor: pointer; /* Cursor de pointer al pasar el mouse */
+    transition: background-color 0.3s; /* Transición suave para el fondo */
+}
+
+.search-bar button:hover {
+    background-color: #219653; /* Verde más oscuro al pasar el mouse (coincide con .btn-create:hover) */
+}
