@@ -1,5 +1,4 @@
-
-<!-- myapp/templates/note_detail.html -->
+<!-- notas/nota_detail.html -->
 {% extends "notas/base.html" %}
 
 {% block title %}Detalles de la Nota{% endblock %}
@@ -11,9 +10,6 @@
 
 {% block content %}
     <div class="note-detail-page">
-        <!-- Botón para regresar al inicio -->
-         
-        
         <div class="note-actions">
             <a href="{% url 'notas' %}" class="btn btn-back">Volver Atras</a>
             <a href="{% url 'edit' nota.id %}" class="btn btn-edit">
@@ -24,7 +20,6 @@
             </a>
         </div>
 
-        <!-- Sección de detalles de la nota -->
         <div class="note-cover">
             {% if nota.imagen %}
                 <img src="{{ nota.imagen.url }}" alt="Portada de la nota">
@@ -35,6 +30,15 @@
 
         <h2 class="note-title">{{ nota.titulo }}</h2>
 
+        <div class="note-categories">
+            <strong>Categorías:</strong>
+            {% for categoria in nota.categorias.all %}
+                {{ categoria.nombre }}{% if not forloop.last %}, {% endif %}
+            {% empty %}
+                Sin categorías
+            {% endfor %}
+        </div>
+
         <div class="note-content">
             <p>{{ nota.descripcion |safe }}</p>
         </div>
@@ -42,11 +46,11 @@
 
     <script>
         function confirmDelete(event, url) {
-            event.preventDefault(); // Evita la redirección inmediata
+            event.preventDefault();
             if (confirm("¿Estás seguro de que quieres eliminar esta nota?")) {
-                window.location.href = url; // Redirige al enlace si se confirma
+                window.location.href = url;
             }
-            return false; // Evita la acción por defecto si no se confirma
+            return false;
         }
     </script>
 {% endblock %}

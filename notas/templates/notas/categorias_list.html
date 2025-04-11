@@ -1,0 +1,33 @@
+<!-- notas/categorias_list.html -->
+{% extends "notas/base.html" %}
+{% load static %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'notas/css/categorias.css' %}">
+{% endblock %}
+
+{% block title %}Mis Categorías - Mi Aplicación{% endblock %}
+
+{% block content %}
+    <div class="categorias-page">
+        <h2>Mis Categorías</h2>
+        <a href="{% url 'categoria_create' %}" class="btn btn-create">Nueva Categoría</a>
+
+        <div class="categorias-list">
+            {% for categoria in categorias %}
+                <div class="categoria-card">
+                    <h3>{{ categoria.nombre }}</h3>
+                    <p>
+                        {% if categoria.es_predeterminada %}
+                            (Predeterminada)
+                        {% else %}
+                            <a href="{% url 'categoria_delete' categoria.id %}" class="btn btn-delete" onclick="return confirm('¿Estás seguro de que quieres dejar de usar esta categoría? Se removerá de tus notas asociadas si no es usada por otros usuarios.')">Dejar de usar</a>
+                        {% endif %}
+                    </p>
+                </div>
+            {% empty %}
+                <p>No tienes categorías. Crea una nueva categoría.</p>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}

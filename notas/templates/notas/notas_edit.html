@@ -1,3 +1,4 @@
+<!-- notas/notas_edit.html -->
 {% extends "notas/base.html" %}
 {% load static %}
 
@@ -12,18 +13,41 @@
         <!-- Botón de regreso -->
         <button class="btn-back" onclick="window.history.back()">Regresar</button>
         
-        <h2>Crear Nueva Nota</h2>
+        <h2>Editar Nota</h2>
 
         <form method="post" enctype="multipart/form-data" class="note-form">
             {% csrf_token %}
-            {{ form.as_p }}
+            <div class="form-group">
+                <label for="id_titulo">Título</label>
+                {{ form.titulo }}
+            </div>
+            <div class="form-group">
+                <label for="id_descripcion">Descripción</label>
+                {{ form.descripcion }}
+            </div>
+            <div class="form-group">
+                <label for="id_imagen">Imagen</label>
+                {{ form.imagen }}
+            </div>
+            <div class="form-group">
+                <label>Categorías</label>
+                {{ form.categorias }}
+            </div>
+            <div class="form-group">
+                <label for="id_nueva_categoria">Nueva Categoría (opcional)</label>
+                {{ form.nueva_categoria }}
+            </div>
 
             <div class="image-preview">
-                <img id="preview" src="#" alt="Vista previa" style="max-width: 100%; max-height: 100%; display: none;">
+                {% if nota.imagen %}
+                    <img id="preview" src="{{ nota.imagen.url }}" alt="Vista previa" style="max-width: 100%; max-height: 100%;">
+                {% else %}
+                    <img id="preview" src="#" alt="Vista previa" style="max-width: 100%; max-height: 100%; display: none;">
+                {% endif %}
             </div>
 
             <br>
-            <button type="submit" class="btn btn-save">Guardar Nota</button>
+            <button type="submit" class="btn btn-save">Guardar Cambios</button>
         </form>
     </div>
 

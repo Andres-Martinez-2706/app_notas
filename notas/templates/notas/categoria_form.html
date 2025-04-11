@@ -1,0 +1,24 @@
+<!-- notas/categoria_form.html -->
+{% extends "notas/base.html" %}
+{% load static %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'notas/css/categorias.css' %}">
+{% endblock %}
+
+{% block title %}Crear Categoría - Mi Aplicación{% endblock %}
+
+{% block content %}
+    <div class="categorias-page">
+        <h2>Crear Nueva Categoría</h2>
+
+        <form method="post" class="categoria-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="nombre">Nombre</label>
+                <input type="text" name="nombre" id="nombre" required>
+            </div>
+            <button type="submit" class="btn btn-save">Guardar Categoría</button>
+        </form>
+    </div>
+{% endblock %}

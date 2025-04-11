@@ -1,76 +1,77 @@
-<!-- myapp/templates/notes.html -->
-{% extends "notas/base.html" %} {% load static %} {% load filters %} 
+<!-- notas/notas.html -->
+{% extends "notas/base.html" %}
+{% load static %}
+{% load filters %}
+
 {% block head %}
-<link rel="stylesheet" href="{% static 'notas/css/notas.css' %}" />
+    <link rel="stylesheet" href="{% static 'notas/css/notas.css' %}" />
 {% endblock %}
 
-<!--
-{% block header %}
-    <header>
-        <h1>Notas</h1>
-        <nav>
-            <a href="{% url 'home' %}">Inicio</a>
-            <a href="{% url 'create' %}">Crear Nota</a>
-        </nav>
-    </header>
-{% endblock %}
--->
+{% block title %}Notas - Mi Aplicación{% endblock %}
 
-{% block title %}Notas - Mi Aplicación{% endblock %} {% block content %}
-
-<div class="search-bar">
-  <form method="get" action="{% url 'notas' %}">
-    <input
-      type="text"
-      name="q"
-      placeholder="Buscar notas..."
-      value="{{ query }}"
-    />
-    <button type="submit">Buscar</button>
-  </form>
-</div>
-
-<div class="notes-header">
-  <h1>Mis Notas</h1>
-  <a href="{% url 'create' %}" class="btn btn-create">
-    <span>+</span> Nueva Nota
-  </a>
-</div>
-
-<div class="notes-list">
-
-
-  {% for nota in notas %}
-  <div class="note-card">
-    <h3>
-      <a href="{% url 'detail' nota.id %}">{{ nota.titulo }}</a>
-    </h3>
-    <p>{{ nota.descripcion|remove_images|truncatewords:50|safe }}</p>
-    <div class="note-actions">
-      <a href="{% url 'edit' nota.id %}" class="btn btn-edit">
-        <span class="icon">✏️</span> Editar
-      </a>
-      <a
-        href="{% url 'delete' nota.id %}"
-        class="btn btn-delete"
-        onclick="return confirmDelete(event, this.href);"
-      >
-        <span class="icon">🗑️</span> Eliminar
-      </a>
+{% block content %}
+    <div class="search-bar">
+        <form method="get" action="{% url 'notas' %}">
+            <input
+                type="text"
+                name="q"
+                placeholder="Buscar notas..."
+                value="{{ query }}"
+            />
+            <button type="submit">Buscar</button>
+        </form>
     </div>
-  </div>
-  {% empty %}
-  <p>No hay notas disponibles. ¡Crea una nueva nota!</p>
-  {% endfor %}
-</div>
 
-<script>
-  function confirmDelete(event, url) {
-    event.preventDefault(); // Evita la redirección inmediata
-    if (confirm("¿Estás seguro de que quieres eliminar esta nota?")) {
-      window.location.href = url; // Redirige al enlace si se confirma
-    }
-    return false; // Evita la acción por defecto si no se confirma
-  }
-</script>
+    <div class="notes-header">
+        <h1>Mis Notas</h1>
+        <div class="notes-actions">
+            <a href="{% url 'categorias_list' %}" class="btn btn-categorias">Gestionar Categorías</a>
+            <a href="{% url 'create' %}" class="btn btn-create">
+                <span>+</span> Nueva Nota
+            </a>
+        </div>
+    </div>
+
+    <div class="notes-list">
+        {% for nota in notas %}
+            <div class="note-card">
+                <h3>
+                    <a href="{% url 'detail' nota.id %}">{{ nota.titulo }}</a>
+                </h3>
+                <p>{{ nota.descripcion|remove_images|truncatewords:50|safe }}</p>
+                <div class="note-categories">
+                    <strong>Categorías:</strong>
+                    {% for categoria in nota.categorias.all %}
+                        {{ categoria.nombre }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                        Sin categorías
+                    {% endfor %}
+                </div>
+                <div class="note-actions">
+                    <a href="{% url 'edit' nota.id %}" class="btn btn-edit">
+                        <span class="icon">✏️</span> Editar
+                    </a>
+                    <a
+                        href="{% url 'delete' nota.id %}"
+                        class="btn btn-delete"
+                        onclick="return confirmDelete(event, this.href);"
+                    >
+                        <span class="icon">🗑️</span> Eliminar
+                    </a>
+                </div>
+            </div>
+        {% empty %}
+            <p>No hay notas disponibles. ¡Crea una nueva nota!</p>
+        {% endfor %}
+    </div>
+
+    <script>
+        function confirmDelete(event, url) {
+            event.preventDefault();
+            if (confirm("¿Estás seguro de que quieres eliminar esta nota?")) {
+                window.location.href = url;
+            }
+            return false;
+        }
+    </script>
 {% endblock %}

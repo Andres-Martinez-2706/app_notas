@@ -13,4 +13,7 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
     path('login/', LoginView.as_view(template_name='notas/login.html'), name='login'),
     path('register/', views.create_user, name='register'),
+    path('categorias/', views.categorias_list, name='categorias_list'),
+    path('categorias/create/', views.categoria_create, name='categoria_create'),
+    path('categorias/delete/<int:categoria_id>/', views.categoria_delete, name='categoria_delete'),
 ]

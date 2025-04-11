@@ -1,6 +1,6 @@
 from django.shortcuts import render,redirect,get_object_or_404
 from .forms import NotaForm
-from .models import Nota
+from .models import Nota, Categoria
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
@@ -69,30 +69,43 @@ def notas_edit(request, nota_id):
         form = NotaForm(request.POST, request.FILES, instance=nota)
         if form.is_valid():
             form.save()
+            nueva_categoria = form.cleaned_data.get('nueva_categoria')
+            if nueva_categoria:
+                categoria, created = Categoria.objects.get_or_create(nombre=nueva_categoria)
+                categoria.usuarios.add(request.user)
+                nota.categorias.add(categoria)
+                
             return redirect('notas')
     else:
-        form = NotaForm(instance=nota)
-    return render(request, 'notas/notas_edit.html', {'form': form})
+        form = NotaForm(instance=nota,user=request.user)
+    return render(request, 'notas/notas_edit.html', {'form': form, 'nota': nota})
 
 @login_required
 def notas_create(request):
     if request.method == 'POST':
         form = NotaForm(request.POST, request.FILES)
         if form.is_valid():
-            note = form.save(commit=False)
-            note.author = request.user  # Asignar el usuario actual
-            note.save()
+            nota = form.save(commit=False)
+            nota.author = request.user  # Asignar el usuario actual
+            nota.save()
+            form.save_m2m()
+            nueva_categoria = form.cleaned_data.get('nueva_categoria')
+            if nueva_categoria:
+                categoria, created = Categoria.objects.get_or_create(nombre=nueva_categoria)
+                categoria.usuarios.add(request.user)
+                nota.categorias.add(categoria)
+            
             return redirect('notas')
     else:
-        form = NotaForm()
+        form = NotaForm(user=request.user)
     return render(request, 'notas/notas_create.html', {'form': form})
 
 
 @login_required
 def nota_detail(request, nota_id):
-    note = get_object_or_404(Nota, id=nota_id)
+    nota = get_object_or_404(Nota, id=nota_id,author=request.user)
     return render(request, 'notas/nota_detail.html', {
-        'nota': note,
+        'nota': nota,
 
     })
 
@@ -104,5 +117,26 @@ def notas_delete(request, nota_id):
     return redirect('notas')
 
 
+@login_required
+def categorias_list(request):
+    categorias = Categoria.objects.filter(Q(usuarios=request.user) | Q(es_predeterminada=True))
+    return render(request, 'notas/categorias_list.html', {'categorias': categorias})
 
-# Create your views here.
+@login_required
+def categoria_create(request):
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre')
+        if nombre:
+            categoria, created = Categoria.objects.get_or_create(nombre=nombre)
+            categoria.usuarios.add(request.user)
+            return redirect('categorias_list')
+    return render(request, 'notas/categoria_form.html')
+
+@login_required
+def categoria_delete(request, categoria_id):
+    categoria = get_object_or_404(Categoria, id=categoria_id)
+    if not categoria.es_predeterminada and request.user in categoria.usuarios.all():
+        categoria.usuarios.remove(request.user)
+        if not categoria.usuarios.exists() and not categoria.notas.exists():
+            categoria.delete()
+    return redirect('categorias_list')

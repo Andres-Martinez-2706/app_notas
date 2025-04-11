@@ -1,67 +1,52 @@
-/* myapp/static/css/styles.css */
-
-/* Estilos existentes (mantén los que ya tienes) */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+/* notas/static/notas/css/notas.css */
+.search-bar {
+    width: 100%;
+    margin-bottom: 30px;
+    text-align: center;
 }
 
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-}
-
-.container {
+.search-bar form {
     display: flex;
-    min-height: 100vh;
+    justify-content: center;
+    gap: 10px;
 }
 
-.sidebar {
-    width: 250px;
-    background-color: #2c3e50;
-    padding: 20px;
-    color: white;
-}
-
-.sidebar ul {
-    list-style: none;
-}
-
-.sidebar ul li {
-    margin: 20px 0;
-}
-
-.sidebar ul li a {
-    color: white;
-    text-decoration: none;
-    font-size: 18px;
-    display: block;
-    padding: 10px;
-    border-radius: 5px;
-}
-
-.sidebar ul li a:hover {
-    background-color: #34495e;
-}
-
-.content {
+.search-bar input[type="text"] {
     flex: 1;
-    padding: 40px;
-    background-color: #ecf0f1;
-}
-
-.content h1 {
-    margin-bottom: 20px;
-    color: #2c3e50;
-}
-
-.content p {
+    max-width: 400px;
+    padding: 10px 15px;
     font-size: 16px;
+    color: #2c3e50;
+    background-color: #ffffff;
+    border: 1px solid #ecf0f1;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.search-bar input[type="text"]::placeholder {
     color: #7f8c8d;
 }
 
-/* Nuevos estilos para la vista de notas */
+.search-bar input[type="text"]:focus {
+    border-color: #27ae60;
+}
+
+.search-bar button {
+    padding: 10px 20px;
+    font-size: 16px;
+    color: #ffffff;
+    background-color: #27ae60;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.search-bar button:hover {
+    background-color: #219653;
+}
+
 .notes-header {
     display: flex;
     justify-content: space-between;
@@ -74,19 +59,34 @@ body {
     color: #2c3e50;
 }
 
-.btn {
-    display: inline-flex;
-    align-items: center;
+.notes-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-categorias {
+    background-color: #8e44ad; /* Púrpura para diferenciarlo */
+    color: white;
     padding: 8px 16px;
-    text-decoration: none;
-    font-size: 16px;
     border-radius: 5px;
+    text-decoration: none;
     transition: background-color 0.3s;
+}
+
+.btn-categorias:hover {
+    background-color: #732d91;
 }
 
 .btn-create {
     background-color: #27ae60;
     color: white;
+    padding: 8px 16px;
+    border-radius: 5px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: background-color 0.3s;
 }
 
 .btn-create:hover {
@@ -94,7 +94,6 @@ body {
 }
 
 .btn-create span {
-    margin-right: 5px;
     font-size: 18px;
 }
 
@@ -109,12 +108,25 @@ body {
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.note-card:hover {
+    transform: translateY(-5px);
 }
 
 .note-card h3 {
     font-size: 20px;
-    color: #2c3e50;
     margin-bottom: 10px;
+}
+
+.note-card h3 a {
+    color: #2c3e50;
+    text-decoration: none;
+}
+
+.note-card h3 a:hover {
+    color: #3498db;
 }
 
 .note-card p {
@@ -123,9 +135,25 @@ body {
     margin-bottom: 15px;
 }
 
+.note-categories {
+    font-size: 14px;
+    color: #7f8c8d;
+    margin-bottom: 10px;
+}
+
 .note-actions {
     display: flex;
     gap: 10px;
+}
+
+.btn-edit, .btn-delete {
+    padding: 8px 16px;
+    border-radius: 5px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: background-color 0.3s;
 }
 
 .btn-edit {
@@ -137,10 +165,6 @@ body {
     background-color: #2980b9;
 }
 
-.btn-edit .icon {
-    margin-right: 5px;
-}
-
 .btn-delete {
     background-color: #e74c3c;
     color: white;
@@ -150,48 +174,6 @@ body {
     background-color: #c0392b;
 }
 
-/* Estilos para la barra de búsqueda */
-.search-bar {
-    width: 100%; /* Ocupa todo el ancho del contenedor */
-    margin-bottom: 30px; /* Espacio debajo de la barra de búsqueda */
-}
-
-.search-bar form {
-    display: flex; /* Coloca el input y el botón en la misma línea */
-    gap: 10px; /* Espacio entre el input y el botón */
-}
-
-.search-bar input[type="text"] {
-    flex: 1; /* El input ocupa todo el espacio disponible */
-    padding: 10px 15px; /* Espaciado interno */
-    font-size: 16px; /* Tamaño de fuente */
-    color: #2c3e50; /* Color del texto (azul oscuro) */
-    background-color: #ffffff; /* Fondo blanco */
-    border: 1px solid #ecf0f1; /* Borde gris claro */
-    border-radius: 8px; /* Esquinas redondeadas */
-    outline: none; /* Quita el borde de enfoque por defecto */
-    transition: border-color 0.3s; /* Transición suave para el borde */
-}
-
-.search-bar input[type="text"]::placeholder {
-    color: #7f8c8d; /* Color gris medio para el placeholder */
-}
-
-.search-bar input[type="text"]:focus {
-    border-color: #27ae60; /* Borde verde al enfocar (coincide con el botón) */
-}
-
-.search-bar button {
-    padding: 10px 20px; /* Espaciado interno */
-    font-size: 16px; /* Tamaño de fuente */
-    color: #ffffff; /* Texto blanco */
-    background-color: #27ae60; /* Fondo verde (coincide con .btn-create) */
-    border: none; /* Sin borde */
-    border-radius: 8px; /* Esquinas redondeadas */
-    cursor: pointer; /* Cursor de pointer al pasar el mouse */
-    transition: background-color 0.3s; /* Transición suave para el fondo */
-}
-
-.search-bar button:hover {
-    background-color: #219653; /* Verde más oscuro al pasar el mouse (coincide con .btn-create:hover) */
+.icon {
+    font-size: 16px;
 }

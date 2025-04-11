@@ -1,0 +1,840 @@
+===== base.html ===== 
+<!-- myapp/templates/base.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>{% block title %}Mi Aplicación{% endblock %}</title>
+		<link rel="stylesheet" href="{% static 'notas/css/base.css' %}" />
+		{% block head %} {% endblock head %}
+  	</head>
+  	<body>
+		<div class="container">
+			
+			<nav class="sidebar">
+				<div class="sidebar-header">
+					<h2>📚App Notas</h2>
+				</div>
+				<ul>
+					<li>
+						<a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">🏠 Inicio</a>
+					</li>
+					
+					{% if user.is_staff or user.is_superuser %}
+						<li><a href="{% url 'admin:index' %}">🛠️Administración</a></li>
+					{% endif %}
+
+					{% if user.is_authenticated %}
+						<li>
+							<a href="{% url 'notas' %}" class="{% if request.resolver_match.url_name == 'notas' %}active{% endif %}">📝Mis Notas</a>
+						</li>
+						<li>
+							<a href="{% url 'perfil' %}" class="{% if request.resolver_match.url_name == 'perfil' %}active{% endif %}">👨🏻‍💻Perfil</a>
+						</li>
+						<li>
+							<a href="{% url 'logout' %}">❌Cerrar Sesión</a>
+						</li>
+
+					{% else %}
+						<li>
+							<a href="{% url 'login' %}" class="{% if request.resolver_match.url_name == 'login' %}active{% endif %}">✅Iniciar Sesión</a>
+						</li>
+						<li><a href="{% url 'register' %}" class="{% if request.resolver_match.url_name == 'register' %}active{% endif %}">👤Crear Usuario</a></li>
+					{% endif %}
+				
+				</ul>
+			</nav>
+
+			<!-- Área de contenido principal -->
+			<main class="content">
+				{% block content %}
+				<!-- Este bloque será sobrescrito por otras páginas -->
+
+				{% endblock %}
+			</main>
+		</div>
+  	</body>
+</html>
+
+===== create_user.html ===== 
+{% extends 'notas/base.html' %} {% block content %}
+{% load static %}
+{% block head %}
+<link rel="stylesheet" href="{% static 'notas/css/create_user.css' %}">
+{% endblock head %}
+
+<div id="card_user">
+  <h4 id="error">{{error}}</h4>
+  <form action="{% url 'register' %}" method="POST">
+  {% csrf_token %}
+  {{form.as_p}}
+  <button id="boton" type="submit">💾Guardar</button>
+  </form>
+</div>
+{% endblock %}
+
+===== index.html ===== 
+<!-- myapp/templates/login.html -->
+{% extends "notas/base.html" %}
+
+{% block title %}Inicio{% endblock %}
+
+{% block head %}
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'notas/css/index.css' %}">
+{% endblock %}
+
+{% block content %}
+
+
+{% endblock %}
+===== login.html ===== 
+<!-- myapp/templates/login.html -->
+{% extends "notas/base.html" %}
+
+{% block title %}Iniciar Sesión - Mi Aplicación{% endblock %}
+
+{% block head %}
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'notas/css/login.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="login-page">
+    <h2>Iniciar Sesión</h2>
+
+    {% if form.errors %}
+        <p style="color: red;">Usuario o contraseña incorrectos. Inténtalo de nuevo.</p>
+    {% endif %}
+
+    <form method="post" class="login-form">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="id_username">Usuario</label>
+            <input type="text" name="username" id="id_username" required>
+        </div>
+        <div class="form-group">
+            <label for="id_password">Contraseña</label>
+            <input type="password" name="password" id="id_password" required>
+        </div>
+        <button type="submit" class="btn btn-login">Iniciar Sesión</button>
+    </form>
+</div>
+{% endblock %}
+===== notas.html ===== 
+<!-- myapp/templates/notes.html -->
+{% extends "notas/base.html" %} {% load static %} {% load filters %} 
+{% block head %}
+<link rel="stylesheet" href="{% static 'notas/css/notas.css' %}" />
+{% endblock %}
+
+<!--
+{% block header %}
+    <header>
+        <h1>Notas</h1>
+        <nav>
+            <a href="{% url 'home' %}">Inicio</a>
+            <a href="{% url 'create' %}">Crear Nota</a>
+        </nav>
+    </header>
+{% endblock %}
+-->
+
+{% block title %}Notas - Mi Aplicación{% endblock %} {% block content %}
+
+<div class="search-bar">
+  <form method="get" action="{% url 'notas' %}">
+    <input
+      type="text"
+      name="q"
+      placeholder="Buscar notas..."
+      value="{{ query }}"
+    />
+    <button type="submit">Buscar</button>
+  </form>
+</div>
+
+<div class="notes-header">
+  <h1>Mis Notas</h1>
+  <a href="{% url 'create' %}" class="btn btn-create">
+    <span>+</span> Nueva Nota
+  </a>
+</div>
+
+<div class="notes-list">
+
+
+  {% for nota in notas %}
+  <div class="note-card">
+    <h3>
+      <a href="{% url 'detail' nota.id %}">{{ nota.titulo }}</a>
+    </h3>
+    <p>{{ nota.descripcion|remove_images|truncatewords:50|safe }}</p>
+    <div class="note-actions">
+      <a href="{% url 'edit' nota.id %}" class="btn btn-edit">
+        <span class="icon">✏️</span> Editar
+      </a>
+      <a
+        href="{% url 'delete' nota.id %}"
+        class="btn btn-delete"
+        onclick="return confirmDelete(event, this.href);"
+      >
+        <span class="icon">🗑️</span> Eliminar
+      </a>
+    </div>
+  </div>
+  {% empty %}
+  <p>No hay notas disponibles. ¡Crea una nueva nota!</p>
+  {% endfor %}
+</div>
+
+<script>
+  function confirmDelete(event, url) {
+    event.preventDefault(); // Evita la redirección inmediata
+    if (confirm("¿Estás seguro de que quieres eliminar esta nota?")) {
+      window.location.href = url; // Redirige al enlace si se confirma
+    }
+    return false; // Evita la acción por defecto si no se confirma
+  }
+</script>
+{% endblock %}
+
+===== notas_create.html ===== 
+{% extends "notas/base.html" %}
+{% load static %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'notas/css/create.css' %}">
+{% endblock %}
+
+{% block title %}Crear Nota{% endblock %}
+
+{% block content %}
+    <div class="create-note-page">
+        <!-- Botón de regreso -->
+        <button class="btn-back" onclick="window.history.back()">Regresar</button>
+        
+        <h2>Crear Nueva Nota</h2>
+
+        <form method="post" enctype="multipart/form-data" class="note-form">
+            {% csrf_token %}
+            {{ form.as_p }}
+
+            <div class="image-preview">
+                <img id="preview" src="#" alt="Vista previa" style="max-width: 100%; max-height: 100%; display: none;">
+            </div>
+
+            <br>
+            <button type="submit" class="btn btn-save">Guardar Nota</button>
+        </form>
+    </div>
+
+    {{ form.media }}
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const inputImagen = document.getElementById('id_imagen');
+            const preview = document.getElementById('preview');
+        
+            inputImagen.addEventListener('change', function () {
+                const file = this.files[0];
+        
+                if (file) {
+                    const reader = new FileReader();
+        
+                    reader.onload = function (e) {
+                        preview.src = e.target.result;
+                        preview.style.display = 'block';
+                    };
+        
+                    reader.readAsDataURL(file);
+                } else {
+                    preview.src = "#";
+                    preview.style.display = 'none';
+                }
+            });
+        });
+    </script>
+{% endblock %}
+===== notas_delete.html ===== 
+
+===== notas_edit.html ===== 
+{% extends "notas/base.html" %}
+{% load static %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'notas/css/create.css' %}">
+{% endblock %}
+
+{% block title %}Editar Nota{% endblock %}
+
+{% block content %}
+    <div class="create-note-page">
+        <!-- Botón de regreso -->
+        <button class="btn-back" onclick="window.history.back()">Regresar</button>
+        
+        <h2>Crear Nueva Nota</h2>
+
+        <form method="post" enctype="multipart/form-data" class="note-form">
+            {% csrf_token %}
+            {{ form.as_p }}
+
+            <div class="image-preview">
+                <img id="preview" src="#" alt="Vista previa" style="max-width: 100%; max-height: 100%; display: none;">
+            </div>
+
+            <br>
+            <button type="submit" class="btn btn-save">Guardar Nota</button>
+        </form>
+    </div>
+
+    {{ form.media }}
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const inputImagen = document.getElementById('id_imagen');
+            const preview = document.getElementById('preview');
+        
+            inputImagen.addEventListener('change', function () {
+                const file = this.files[0];
+        
+                if (file) {
+                    const reader = new FileReader();
+        
+                    reader.onload = function (e) {
+                        preview.src = e.target.result;
+                        preview.style.display = 'block';
+                    };
+        
+                    reader.readAsDataURL(file);
+                } else {
+                    preview.src = "#";
+                    preview.style.display = 'none';
+                }
+            });
+        });
+    </script>
+{% endblock %}
+===== nota_detail.html ===== 
+
+<!-- myapp/templates/note_detail.html -->
+{% extends "notas/base.html" %}
+
+{% block title %}Detalles de la Nota{% endblock %}
+
+{% block head %}
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'notas/css/detail.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="note-detail-page">
+        <!-- Botón para regresar al inicio -->
+         
+        
+        <div class="note-actions">
+            <a href="{% url 'notas' %}" class="btn btn-back">Volver Atras</a>
+            <a href="{% url 'edit' nota.id %}" class="btn btn-edit">
+                <span class="icon">✏️</span> Editar
+            </a>
+            <a href="{% url 'delete' nota.id %}" class="btn btn-delete" onclick="return confirmDelete(event, this.href);">
+                <span class="icon">🗑️</span> Eliminar
+            </a>
+        </div>
+
+        <!-- Sección de detalles de la nota -->
+        <div class="note-cover">
+            {% if nota.imagen %}
+                <img src="{{ nota.imagen.url }}" alt="Portada de la nota">
+            {% else %}
+                <div class="no-image">Sin imagen</div>
+            {% endif %}
+        </div>
+
+        <h2 class="note-title">{{ nota.titulo }}</h2>
+
+        <div class="note-content">
+            <p>{{ nota.descripcion |safe }}</p>
+        </div>
+    </div>
+
+    <script>
+        function confirmDelete(event, url) {
+            event.preventDefault(); // Evita la redirección inmediata
+            if (confirm("¿Estás seguro de que quieres eliminar esta nota?")) {
+                window.location.href = url; // Redirige al enlace si se confirma
+            }
+            return false; // Evita la acción por defecto si no se confirma
+        }
+    </script>
+{% endblock %}
+===== perfil.html ===== 
+<!-- notas/templates/profile.html -->
+{% extends "notas/base.html" %}
+{% load static %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'notas/css/perfil.css' %}">
+{% endblock %}
+
+{% block title %}Perfil - Mi Aplicación{% endblock %}
+
+{% block content %}
+    <div class="profile-page">
+        <!-- Encabezado con botones -->
+        <div class="profile-header">
+            <a href="{% url 'home' %}" class="btn btn-back">Volver al Inicio</a>
+            <a href="{% url 'logout' %}" class="btn btn-logout">Cerrar Sesión</a>
+        </div>
+
+        <!-- Sección del perfil -->
+        <div class="profile-info">
+            <div class="profile-icon">👤</div>
+            <div class="username">{{ user.username }}</div>
+        </div>
+
+        <!-- Lista de notas -->
+        <div class="notes-section">
+            <h2>Tus Notas</h2>
+            <ul class="notes-list">
+                {% for nota in notas %}
+                    <li>{{ nota.titulo }}</li>
+                {% empty %}
+                    <li>No tienes notas creadas.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+{% endblock %}
+===== resultado.txt ===== 
+===== base.html ===== 
+<!-- myapp/templates/base.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>{% block title %}Mi Aplicación{% endblock %}</title>
+		<link rel="stylesheet" href="{% static 'notas/css/base.css' %}" />
+		{% block head %} {% endblock head %}
+  	</head>
+  	<body>
+		<div class="container">
+			
+			<nav class="sidebar">
+				<div class="sidebar-header">
+					<h2>📚App Notas</h2>
+				</div>
+				<ul>
+					<li>
+						<a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">🏠 Inicio</a>
+					</li>
+					
+					{% if user.is_staff or user.is_superuser %}
+						<li><a href="{% url 'admin:index' %}">🛠️Administración</a></li>
+					{% endif %}
+
+					{% if user.is_authenticated %}
+						<li>
+							<a href="{% url 'notas' %}" class="{% if request.resolver_match.url_name == 'notas' %}active{% endif %}">📝Mis Notas</a>
+						</li>
+						<li>
+							<a href="{% url 'perfil' %}" class="{% if request.resolver_match.url_name == 'perfil' %}active{% endif %}">👨🏻‍💻Perfil</a>
+						</li>
+						<li>
+							<a href="{% url 'logout' %}">❌Cerrar Sesión</a>
+						</li>
+
+					{% else %}
+						<li>
+							<a href="{% url 'login' %}" class="{% if request.resolver_match.url_name == 'login' %}active{% endif %}">✅Iniciar Sesión</a>
+						</li>
+						<li><a href="{% url 'register' %}" class="{% if request.resolver_match.url_name == 'register' %}active{% endif %}">👤Crear Usuario</a></li>
+					{% endif %}
+				
+				</ul>
+			</nav>
+
+			<!-- Área de contenido principal -->
+			<main class="content">
+				{% block content %}
+				<!-- Este bloque será sobrescrito por otras páginas -->
+
+				{% endblock %}
+			</main>
+		</div>
+  	</body>
+</html>
+
+===== create_user.html ===== 
+{% extends 'notas/base.html' %} {% block content %}
+{% load static %}
+{% block head %}
+<link rel="stylesheet" href="{% static 'notas/css/create_user.css' %}">
+{% endblock head %}
+
+<div id="card_user">
+  <h4 id="error">{{error}}</h4>
+  <form action="{% url 'register' %}" method="POST">
+  {% csrf_token %}
+  {{form.as_p}}
+  <button id="boton" type="submit">💾Guardar</button>
+  </form>
+</div>
+{% endblock %}
+
+===== index.html ===== 
+<!-- myapp/templates/login.html -->
+{% extends "notas/base.html" %}
+
+{% block title %}Inicio{% endblock %}
+
+{% block head %}
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'notas/css/index.css' %}">
+{% endblock %}
+
+{% block content %}
+
+
+{% endblock %}
+===== login.html ===== 
+<!-- myapp/templates/login.html -->
+{% extends "notas/base.html" %}
+
+{% block title %}Iniciar Sesión - Mi Aplicación{% endblock %}
+
+{% block head %}
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'notas/css/login.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="login-page">
+    <h2>Iniciar Sesión</h2>
+
+    {% if form.errors %}
+        <p style="color: red;">Usuario o contraseña incorrectos. Inténtalo de nuevo.</p>
+    {% endif %}
+
+    <form method="post" class="login-form">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="id_username">Usuario</label>
+            <input type="text" name="username" id="id_username" required>
+        </div>
+        <div class="form-group">
+            <label for="id_password">Contraseña</label>
+            <input type="password" name="password" id="id_password" required>
+        </div>
+        <button type="submit" class="btn btn-login">Iniciar Sesión</button>
+    </form>
+</div>
+{% endblock %}
+===== notas.html ===== 
+<!-- myapp/templates/notes.html -->
+{% extends "notas/base.html" %} {% load static %} {% load filters %} 
+{% block head %}
+<link rel="stylesheet" href="{% static 'notas/css/notas.css' %}" />
+{% endblock %}
+
+<!--
+{% block header %}
+    <header>
+        <h1>Notas</h1>
+        <nav>
+            <a href="{% url 'home' %}">Inicio</a>
+            <a href="{% url 'create' %}">Crear Nota</a>
+        </nav>
+    </header>
+{% endblock %}
+-->
+
+{% block title %}Notas - Mi Aplicación{% endblock %} {% block content %}
+
+<div class="search-bar">
+  <form method="get" action="{% url 'notas' %}">
+    <input
+      type="text"
+      name="q"
+      placeholder="Buscar notas..."
+      value="{{ query }}"
+    />
+    <button type="submit">Buscar</button>
+  </form>
+</div>
+
+<div class="notes-header">
+  <h1>Mis Notas</h1>
+  <a href="{% url 'create' %}" class="btn btn-create">
+    <span>+</span> Nueva Nota
+  </a>
+</div>
+
+<div class="notes-list">
+
+
+  {% for nota in notas %}
+  <div class="note-card">
+    <h3>
+      <a href="{% url 'detail' nota.id %}">{{ nota.titulo }}</a>
+    </h3>
+    <p>{{ nota.descripcion|remove_images|truncatewords:50|safe }}</p>
+    <div class="note-actions">
+      <a href="{% url 'edit' nota.id %}" class="btn btn-edit">
+        <span class="icon">✏️</span> Editar
+      </a>
+      <a
+        href="{% url 'delete' nota.id %}"
+        class="btn btn-delete"
+        onclick="return confirmDelete(event, this.href);"
+      >
+        <span class="icon">🗑️</span> Eliminar
+      </a>
+    </div>
+  </div>
+  {% empty %}
+  <p>No hay notas disponibles. ¡Crea una nueva nota!</p>
+  {% endfor %}
+</div>
+
+<script>
+  function confirmDelete(event, url) {
+    event.preventDefault(); // Evita la redirección inmediata
+    if (confirm("¿Estás seguro de que quieres eliminar esta nota?")) {
+      window.location.href = url; // Redirige al enlace si se confirma
+    }
+    return false; // Evita la acción por defecto si no se confirma
+  }
+</script>
+{% endblock %}
+
+===== notas_create.html ===== 
+{% extends "notas/base.html" %}
+{% load static %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'notas/css/create.css' %}">
+{% endblock %}
+
+{% block title %}Crear Nota{% endblock %}
+
+{% block content %}
+    <div class="create-note-page">
+        <!-- Botón de regreso -->
+        <button class="btn-back" onclick="window.history.back()">Regresar</button>
+        
+        <h2>Crear Nueva Nota</h2>
+
+        <form method="post" enctype="multipart/form-data" class="note-form">
+            {% csrf_token %}
+            {{ form.as_p }}
+
+            <div class="image-preview">
+                <img id="preview" src="#" alt="Vista previa" style="max-width: 100%; max-height: 100%; display: none;">
+            </div>
+
+            <br>
+            <button type="submit" class="btn btn-save">Guardar Nota</button>
+        </form>
+    </div>
+
+    {{ form.media }}
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const inputImagen = document.getElementById('id_imagen');
+            const preview = document.getElementById('preview');
+        
+            inputImagen.addEventListener('change', function () {
+                const file = this.files[0];
+        
+                if (file) {
+                    const reader = new FileReader();
+        
+                    reader.onload = function (e) {
+                        preview.src = e.target.result;
+                        preview.style.display = 'block';
+                    };
+        
+                    reader.readAsDataURL(file);
+                } else {
+                    preview.src = "#";
+                    preview.style.display = 'none';
+                }
+            });
+        });
+    </script>
+{% endblock %}
+===== notas_delete.html ===== 
+
+===== notas_edit.html ===== 
+{% extends "notas/base.html" %}
+{% load static %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'notas/css/create.css' %}">
+{% endblock %}
+
+{% block title %}Editar Nota{% endblock %}
+
+{% block content %}
+    <div class="create-note-page">
+        <!-- Botón de regreso -->
+        <button class="btn-back" onclick="window.history.back()">Regresar</button>
+        
+        <h2>Crear Nueva Nota</h2>
+
+        <form method="post" enctype="multipart/form-data" class="note-form">
+            {% csrf_token %}
+            {{ form.as_p }}
+
+            <div class="image-preview">
+                <img id="preview" src="#" alt="Vista previa" style="max-width: 100%; max-height: 100%; display: none;">
+            </div>
+
+            <br>
+            <button type="submit" class="btn btn-save">Guardar Nota</button>
+        </form>
+    </div>
+
+    {{ form.media }}
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const inputImagen = document.getElementById('id_imagen');
+            const preview = document.getElementById('preview');
+        
+            inputImagen.addEventListener('change', function () {
+                const file = this.files[0];
+        
+                if (file) {
+                    const reader = new FileReader();
+        
+                    reader.onload = function (e) {
+                        preview.src = e.target.result;
+                        preview.style.display = 'block';
+                    };
+        
+                    reader.readAsDataURL(file);
+                } else {
+                    preview.src = "#";
+                    preview.style.display = 'none';
+                }
+            });
+        });
+    </script>
+{% endblock %}
+===== nota_detail.html ===== 
+
+<!-- myapp/templates/note_detail.html -->
+{% extends "notas/base.html" %}
+
+{% block title %}Detalles de la Nota{% endblock %}
+
+{% block head %}
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'notas/css/detail.css' %}">
+{% endblock %}
+
+{% block content %}
+    <div class="note-detail-page">
+        <!-- Botón para regresar al inicio -->
+         
+        
+        <div class="note-actions">
+            <a href="{% url 'notas' %}" class="btn btn-back">Volver Atras</a>
+            <a href="{% url 'edit' nota.id %}" class="btn btn-edit">
+                <span class="icon">✏️</span> Editar
+            </a>
+            <a href="{% url 'delete' nota.id %}" class="btn btn-delete" onclick="return confirmDelete(event, this.href);">
+                <span class="icon">🗑️</span> Eliminar
+            </a>
+        </div>
+
+        <!-- Sección de detalles de la nota -->
+        <div class="note-cover">
+            {% if nota.imagen %}
+                <img src="{{ nota.imagen.url }}" alt="Portada de la nota">
+            {% else %}
+                <div class="no-image">Sin imagen</div>
+            {% endif %}
+        </div>
+
+        <h2 class="note-title">{{ nota.titulo }}</h2>
+
+        <div class="note-content">
+            <p>{{ nota.descripcion |safe }}</p>
+        </div>
+    </div>
+
+    <script>
+        function confirmDelete(event, url) {
+            event.preventDefault(); // Evita la redirección inmediata
+            if (confirm("¿Estás seguro de que quieres eliminar esta nota?")) {
+                window.location.href = url; // Redirige al enlace si se confirma
+            }
+            return false; // Evita la acción por defecto si no se confirma
+        }
+    </script>
+{% endblock %}
+===== perfil.html ===== 
+<!-- notas/templates/profile.html -->
+{% extends "notas/base.html" %}
+{% load static %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'notas/css/perfil.css' %}">
+{% endblock %}
+
+{% block title %}Perfil - Mi Aplicación{% endblock %}
+
+{% block content %}
+    <div class="profile-page">
+        <!-- Encabezado con botones -->
+        <div class="profile-header">
+            <a href="{% url 'home' %}" class="btn btn-back">Volver al Inicio</a>
+            <a href="{% url 'logout' %}" class="btn btn-logout">Cerrar Sesión</a>
+        </div>
+
+        <!-- Sección del perfil -->
+        <div class="profile-info">
+            <div class="profile-icon">👤</div>
+            <div class="username">{{ user.username }}</div>
+        </div>
+
+        <!-- Lista de notas -->
+        <div class="notes-section">
+            <h2>Tus Notas</h2>
+            <ul class="notes-list">
+                {% for nota in notas %}
+                    <li>{{ nota.titulo }}</li>
+                {% empty %}
+                    <li>No tienes notas creadas.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+{% endblock %}
+===== resultado.txt ===== 
+===== base.html ===== 
+<!-- myapp/templates/base.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<me
