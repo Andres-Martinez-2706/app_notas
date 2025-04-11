@@ -64,42 +64,51 @@ def perfil(request):
 
 @login_required
 def notas_edit(request, nota_id):
-    nota = get_object_or_404(Nota, id=nota_id)
+    nota = get_object_or_404(Nota, id=nota_id, author=request.user)
     if request.method == 'POST':
-        form = NotaForm(request.POST, request.FILES, instance=nota)
+        form = NotaForm(request.user, request.POST, request.FILES, instance=nota)
         if form.is_valid():
-            form.save()
+            # Guardar la nota sin guardar las relaciones ManyToMany todavía
+            nota = form.save(commit=False)
+            nota.save()  # Guardar la nota en la base de datos
+            form.save_m2m()  # Guardar las categorías seleccionadas en el formulario
+
+            # Manejar nueva categoría
             nueva_categoria = form.cleaned_data.get('nueva_categoria')
             if nueva_categoria:
                 categoria, created = Categoria.objects.get_or_create(nombre=nueva_categoria)
                 categoria.usuarios.add(request.user)
-                nota.categorias.add(categoria)
-                
+                nota.categorias.add(categoria)  # Añadir la nueva categoría
+
             return redirect('notas')
     else:
-        form = NotaForm(instance=nota,user=request.user)
+        form = NotaForm(user=request.user, instance=nota)
     return render(request, 'notas/notas_edit.html', {'form': form, 'nota': nota})
 
 @login_required
 def notas_create(request):
     if request.method == 'POST':
-        form = NotaForm(request.POST, request.FILES)
+        form = NotaForm(request.user, request.POST, request.FILES)
         if form.is_valid():
+            # Guardar la nota sin guardar las relaciones ManyToMany todavía
             nota = form.save(commit=False)
             nota.author = request.user  # Asignar el usuario actual
-            nota.save()
-            form.save_m2m()
+            nota.save()  # Guardar la nota en la base de datos
+            form.save_m2m()  # Guarda las categorías seleccionadas en el formulario
+
+            # Manejar nueva categoría
             nueva_categoria = form.cleaned_data.get('nueva_categoria')
             if nueva_categoria:
+                # Asegurarse de que la categoría se cree y guarde correctamente
                 categoria, created = Categoria.objects.get_or_create(nombre=nueva_categoria)
                 categoria.usuarios.add(request.user)
+                # Añadir la nueva categoría a la nota
                 nota.categorias.add(categoria)
-            
+
             return redirect('notas')
     else:
         form = NotaForm(user=request.user)
     return render(request, 'notas/notas_create.html', {'form': form})
-
 
 @login_required
 def nota_detail(request, nota_id):
