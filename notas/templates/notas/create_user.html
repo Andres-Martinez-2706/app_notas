@@ -1,15 +1,47 @@
-{% extends 'notas/base.html' %} {% block content %}
-{% load static %}
-{% block head %}
-<link rel="stylesheet" href="{% static 'notas/css/create_user.css' %}">
-{% endblock head %}
-
+{% extends 'notas/base.html' %} {% load static %} {% block head %}
+<link rel="stylesheet" href="{% static 'notas/css/create_user.css' %}" />
+{% endblock head %} {% block content %}
 <div id="card_user">
-  <h4 id="error">{{error}}</h4>
-  <form action="{% url 'register' %}" method="POST">
-  {% csrf_token %}
-  {{form.as_p}}
-  <button id="boton" type="submit">💾Guardar</button>
+  <h4 id="error">
+    <!-- Mostrar errores generales -->
+    {% if form.errors %}
+    <div class="alert alert-danger">
+      {% for field in form %} {% for error in field.errors %}
+      <p><strong>{{ field.label }}:</strong> {{ error }}</p>
+      {% endfor %} {% endfor %} {% for error in form.non_field_errors %}
+      <p>{{ error }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </h4>
+  <form
+    action="{% url 'register' %}"
+    method="POST"
+    enctype="multipart/form-data"
+  >
+    {% csrf_token %}
+    <p>
+      <label for="{{ form.username.id_for_label }}">Nombre de usuario:</label>
+      {{ form.username }}
+    </p>
+    <p>
+      <label for="{{ form.password1.id_for_label }}">Contraseña:</label>
+      {{ form.password1 }}
+    </p>
+    <p>
+      <label for="{{ form.password2.id_for_label }}"
+        >Confirmar contraseña:</label
+      >
+      {{ form.password2 }}
+    </p>
+
+    <p>
+      <label for="{{ form.profile_picture.id_for_label }}"
+        >Foto de perfil:</label
+      >
+      {{ form.profile_picture }}
+    </p>
+    <button id="boton" type="submit">💾Guardar</button>
   </form>
 </div>
 {% endblock %}

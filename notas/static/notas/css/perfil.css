@@ -12,12 +12,12 @@ body {
 
 .profile-page {
     max-width: 800px;
-    margin: 20px auto; /* Added margin to give space around the card */
+    margin: 20px auto;
     padding: 20px;
-    background-color: white; /* White background for the card */
-    border: 1px solid #ddd; /* Light border for definition */
-    border-radius: 10px; /* Rounded corners */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow for the card effect */
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Estilos del encabezado */
@@ -52,32 +52,42 @@ body {
     background-color: #c0392b;
 }
 
-/* Estilos de la sección del perfil */
+/* Estilos de la sección del perfil - VERSIÓN CORREGIDA */
 .profile-info {
-    text-align: center;
-    margin-bottom: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 30px;
+    gap: 15px;
+}
+
+.profile-picture {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #27ae60;
 }
 
 .profile-icon {
-    width: 100px;
-    height: 100px;
+    width: 120px;
+    height: 120px;
     background-color: #27ae60;
     border-radius: 50%;
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 40px;
+    font-size: 50px;
     color: white;
-    margin: 0 auto 10px;
 }
 
 .username {
-    background-color: #27ae60;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 5px;
-    font-size: 18px;
-    display: inline-block;
+    font-size: 22px;
+    font-weight: bold;
+    color: #333;
+    padding: 8px 16px;
+    background-color: #f0f0f0;
+    border-radius: 20px;
 }
 
 /* Estilos de la sección de notas */
@@ -85,6 +95,7 @@ body {
     background-color: #2980b9;
     padding: 20px;
     border-radius: 8px;
+    margin-top: 20px;
 }
 
 .notes-section h2 {

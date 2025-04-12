@@ -1,5 +1,5 @@
 from django.shortcuts import render,redirect,get_object_or_404
-from .forms import NotaForm
+from .forms import NotaForm, UserCreationFormWithImage
 from .models import Nota, Categoria
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -9,17 +9,20 @@ from django.db.models import Q
 
 def create_user(request):
     if request.method == 'POST':
-        if request.POST['password1'] == request.POST['password2']:
-            try:
-                user = User.objects.create_user(username=request.POST['username'],password=request.POST['password1'])
-                user.save()
-                return redirect('notas')
-            except:       
-                return render (request, 'notas/create_user.html',{
-                    'form':UserCreationForm(),
-                    'error':"El nombre de usuario ya existe" 
-                    })
-    return render (request, 'notas/create_user.html',{'form':UserCreationForm(),'error':"contraseñas no coinciden"})
+        form = UserCreationFormWithImage(request.POST, request.FILES)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect('notas')
+        else:
+            return render(request, 'notas/create_user.html', {
+                'form': form,
+            })
+    else:
+        form = UserCreationFormWithImage()
+    return render(request, 'notas/create_user.html', {
+        'form': form,
+    })
 
     
 
@@ -115,7 +118,6 @@ def nota_detail(request, nota_id):
     nota = get_object_or_404(Nota, id=nota_id,author=request.user)
     return render(request, 'notas/nota_detail.html', {
         'nota': nota,
-
     })
 
 @login_required

@@ -1,6 +1,8 @@
 from django import forms
-from .models import Nota, Categoria
+from .models import Nota, Categoria, Profile
 from django.db.models import Q
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 
 
 class NotaForm(forms.ModelForm):
@@ -29,3 +31,24 @@ class NotaForm(forms.ModelForm):
         self.fields['categorias'].queryset = Categoria.objects.filter(
             Q(usuarios=user) | Q(es_predeterminada=True)
         )
+    
+class UserCreationFormWithImage(UserCreationForm):
+    profile_picture = forms.ImageField(required=False, label="Foto de perfil")
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = ('username', 'password1', 'password2', 'profile_picture')
+        labels = {
+            'username': 'Nombre de usuario',
+            'password1': 'Contraseña',
+            'password2': 'Confirmar contraseña',
+        }
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        if commit:
+            user.save()
+            profile_picture = self.cleaned_data.get('profile_picture')
+        # Crea el perfil incluso si no hay imagen
+            Profile.objects.create(user=user, profile_picture=profile_picture if profile_picture else None)
+        return user
