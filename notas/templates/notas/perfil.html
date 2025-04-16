@@ -23,6 +23,22 @@
     {% else %}
       <div class="profile-icon">👤</div>
     {% endif %}
+    <form method="POST" enctype="multipart/form-data" class="profile-image-form">
+      {% csrf_token %}
+      <div class="form-group">
+        {{ form.profile_picture.label_tag }}
+        <input type="file" name="profile_picture" id="id_profile_picture" class="custom-file-input">
+        {% if user.profile.profile_picture %}
+  <a href="{% url 'borrar_imagen' %}" class="btn btn-delete" onclick="return confirm('¿Estás seguro de que quieres borrar tu imagen de perfil?')">
+    🗑️ Borrar Imagen
+  </a>
+{% endif %}
+
+
+      </div>
+      <button type="submit" class="btn btn-save">💾 Actualizar Imagen</button>
+    </form>
+    
     <div class="username">{{ user.username }}</div>
   </div>
 

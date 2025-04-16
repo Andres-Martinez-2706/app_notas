@@ -1,0 +1,924 @@
+===== resultado.txt ===== 
+===== resultado.txt ===== 
+
+===== base.css ===== 
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+}
+
+.container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Estilos para la barra de navegación lateral */
+.sidebar {
+    width: 250px;
+    background-color: #2c3e50;
+    padding: 20px;
+    color: white;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh; /* Ocupa toda la altura de la ventana */
+    overflow-y: auto; /* Permite desplazamiento interno si el contenido de la barra es largo */
+    font-family: 'Roboto', sans-serif;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-header {
+    padding: 20px;
+    text-align: center;
+    border-bottom: 1px solid #34495e;
+    margin-bottom: 20px;
+}
+
+.sidebar-header h2 {
+    margin: 0;
+    font-size: 24px;
+    color: #1abc9c; /* Color turquesa para el título */
+}
+
+.sidebar ul {
+    list-style: none;
+}
+
+.sidebar ul li {
+    margin: 20px 0;
+}
+
+.sidebar ul li a {
+    color: white;
+    text-decoration: none;
+    font-size: 18px;
+    display: block;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.sidebar ul li a:hover {
+    background-color: #34495e;
+}
+
+/* Estilo para la pestaña activa */
+.sidebar ul li a.active {
+    font-weight: bold;
+    background-color: #1abc9c; /* Fondo turquesa para la pestaña activa */
+    border-left: 4px solid #16a085; /* Barra lateral más oscura para énfasis */
+}
+
+/* Estilos para el contenido principal */
+.content {
+    flex: 1;
+    padding: 40px;
+    background-color: #ecf0f1;
+    margin-left: 250px; /* Desplaza el contenido para que no se superponga con la barra fija */
+    min-height: 100vh; /* Asegura que el contenido ocupe toda la altura */
+}
+
+.content h1 {
+    margin-bottom: 20px;
+    color: #2c3e50;
+}
+
+.content p {
+    font-size: 16px;
+    color: #7f8c8d;
+}
+
+===== categorias.css ===== 
+/* notas/static/notas/css/categorias.css */
+.categorias-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 30px;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    font-family: 'Roboto', sans-serif;
+}
+
+.categorias-page h2 {
+    font-size: 28px;
+    color: #2c3e50;
+    margin-bottom: 20px;
+    text-align: center;
+    border-bottom: 2px solid #2c3e50;
+    padding-bottom: 10px;
+}
+
+.btn-create {
+    background-color: #27ae60;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 20px;
+}
+
+.btn-create:hover {
+    background-color: #219653;
+}
+
+.btn-create::before {
+    content: "+";
+    margin-right: 5px;
+}
+
+.categorias-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.categoria-card {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.categoria-card h3 {
+    font-size: 20px;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.categoria-card p {
+    margin: 0;
+    font-size: 16px;
+    color: #7f8c8d;
+}
+
+.btn-delete {
+    background-color: #e74c3c;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-delete:hover {
+    background-color: #c0392b;
+}
+
+.categoria-form {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    font-size: 16px;
+    color: #2c3e50;
+    margin-bottom: 5px;
+    display: block;
+    font-weight: bold;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+    font-family: 'Arial', sans-serif;
+}
+
+.btn-save {
+    background-color: #27ae60;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: block;
+    margin: 0 auto;
+}
+
+.btn-save:hover {
+    background-color: #219653;
+}
+===== create.css ===== 
+/* notas/static/notas/css/create.css */
+.create-note-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 30px;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    position: relative;
+    font-family: 'Roboto', sans-serif;
+}
+
+.create-note-page h2 {
+    font-size: 28px;
+    color: #2c3e50;
+    margin-bottom: 20px;
+    text-align: center;
+    border-bottom: 2px solid #2c3e50;
+    padding-bottom: 10px;
+}
+
+.note-form {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    font-size: 16px;
+    color: #2c3e50;
+    margin-bottom: 5px;
+    display: block;
+    font-weight: bold;
+}
+
+.form-group input[type="text"],
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+    font-family: 'Arial', sans-serif;
+    transition: border-color 0.3s;
+}
+
+.form-group input[type="text"]:focus,
+.form-group textarea:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+}
+
+.form-group .form-control-file {
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 1px dashed #ccc;
+    border-radius: 5px;
+    background-color: #f4f4f4;
+    display: block;
+    width: 100%;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 150px;
+}
+
+.form-group ul {
+    list-style: none;
+    padding: 0;
+}
+
+.form-group ul li {
+    margin-bottom: 10px;
+}
+
+.image-preview {
+    width: 100%;
+    max-width: 400px;
+    height: 250px;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 20px auto;
+    background-color: #f9f9f9;
+    overflow: hidden;
+}
+
+.image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.btn-back {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background-color: #3498db;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-back:hover {
+    background-color: #2980b9;
+}
+
+.btn-save {
+    background-color: #27ae60;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: block;
+    margin: 0 auto;
+}
+
+.btn-save:hover {
+    background-color: #219653;
+}
+
+.btn-save::before {
+    content: "💾";
+    margin-right: 5px;
+}
+===== create_user.css ===== 
+/* Estilo general del contenedor del formulario */
+#card_user {
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: #ffffff; /* Fondo gris claro */
+    border-radius: 20px;
+    box-shadow: -10px 10px 3px 5px #1abc9c8d;
+}
+
+/* Estilo del mensaje de error */
+#error {
+    color: #6C757D; /* Gris oscuro para el texto de error */
+    font-size: 16px;
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+/* Estilo del formulario */
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Estilo de los párrafos generados por form.as_p */
+form p {
+    margin-bottom: 15px;
+}
+
+/* Estilo de las etiquetas */
+form label {
+    display: block;
+    color: #6C757D; /* Gris oscuro para las etiquetas */
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+/* Estilo de los campos de entrada */
+form input[type="text"],
+form input[type="password"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #CED4DA; /* Borde gris claro */
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 14px;
+}
+
+/* Estilo del botón */
+#boton {
+    background-color: #3498db; /* Verde */
+    color: #FFFFFF; /* Texto blanco */
+    border: none;
+    padding: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+#boton:hover {
+    background-color: #2974a5;
+    border: 2px solid #a0a9af; /* Verde más oscuro al pasar el mouse */
+}
+
+/* Estilo para los errores del formulario */
+form .errorlist {
+    color: #DC3545; /* Rojo para los errores */
+    font-size: 12px;
+    margin-top: 5px;
+}
+===== detail.css ===== 
+/* notas/static/notas/css/detail.css */
+.note-detail-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.note-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.btn-back, .btn-edit, .btn-delete {
+    padding: 8px 16px;
+    border-radius: 5px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: background-color 0.3s;
+}
+
+.btn-back {
+    background-color: #3498db;
+    color: white;
+}
+
+.btn-back:hover {
+    background-color: #2980b9;
+}
+
+.btn-edit {
+    background-color: #3498db;
+    color: white;
+}
+
+.btn-edit:hover {
+    background-color: #2980b9;
+}
+
+.btn-delete {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.btn-delete:hover {
+    background-color: #c0392b;
+}
+
+.note-cover {
+    width: 100%;
+    height: auto;
+    background-color: #f0f0f0;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.note-cover img {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}
+
+.note-cover .no-image {
+    color: #7f8c8d;
+    font-size: 18px;
+}
+
+.note-title {
+    font-size: 28px;
+    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #2c3e50;
+    padding-bottom: 10px;
+}
+
+.note-categories {
+    font-size: 16px;
+    color: #7f8c8d;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.note-content {
+    background-color: white;
+    padding: 20px;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.note-content p {
+    font-size: 16px;
+    color: #7f8c8d;
+    line-height: 1.6;
+}
+
+.note-content img {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block;
+    margin: 0 auto;
+}
+===== index.css ===== 
+
+===== login.css ===== 
+/* myapp/static/notas/css/login.css */
+.login-page {
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 30px;
+    background-color: white;
+    text-align: center;
+    border-radius: 20px;
+    box-shadow: -10px 10px 3px 5px #1abc9c8d;
+}
+
+.login-page h2 {
+    font-size: 28px;
+    color: #2c3e50; /* Color oscuro de la barra lateral */
+    margin-bottom: 20px;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.form-group label {
+    font-size: 16px;
+    color: #2c3e50;
+    margin-bottom: 5px;
+}
+
+.form-group input {
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.form-group input:focus {
+    border-color: #3498db; /* Azul de los botones */
+}
+
+.btn-login {
+    background-color: #3498db; /* Azul de los botones */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-login:hover {
+    background-color: #2980b9; /* Azul más oscuro al pasar el mouse */
+}
+===== notas.css ===== 
+/* notas/static/notas/css/notas.css */
+.search-bar {
+    width: 100%;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.search-bar form {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.search-bar input[type="text"] {
+    flex: 1;
+    max-width: 400px;
+    padding: 10px 15px;
+    font-size: 16px;
+    color: #2c3e50;
+    background-color: #ffffff;
+    border: 1px solid #ecf0f1;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.search-bar input[type="text"]::placeholder {
+    color: #7f8c8d;
+}
+
+.search-bar input[type="text"]:focus {
+    border-color: #27ae60;
+}
+
+.search-bar button {
+    padding: 10px 20px;
+    font-size: 16px;
+    color: #ffffff;
+    background-color: #27ae60;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.search-bar button:hover {
+    background-color: #219653;
+}
+
+.notes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.notes-header h1 {
+    font-size: 28px;
+    color: #2c3e50;
+}
+
+.notes-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-categorias {
+    background-color: #8e44ad; /* Púrpura para diferenciarlo */
+    color: white;
+    padding: 8px 16px;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: background-color 0.3s;
+}
+
+.btn-categorias:hover {
+    background-color: #732d91;
+}
+
+.btn-create {
+    background-color: #27ae60;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 5px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: background-color 0.3s;
+}
+
+.btn-create:hover {
+    background-color: #219653;
+}
+
+.btn-create span {
+    font-size: 18px;
+}
+
+.notes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.note-card {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.note-card:hover {
+    transform: translateY(-5px);
+}
+
+.note-card h3 {
+    font-size: 20px;
+    margin-bottom: 10px;
+}
+
+.note-card h3 a {
+    color: #2c3e50;
+    text-decoration: none;
+}
+
+.note-card h3 a:hover {
+    color: #3498db;
+}
+
+.note-card p {
+    font-size: 16px;
+    color: #7f8c8d;
+    margin-bottom: 15px;
+}
+
+.note-categories {
+    font-size: 14px;
+    color: #7f8c8d;
+    margin-bottom: 10px;
+}
+
+.note-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-edit, .btn-delete {
+    padding: 8px 16px;
+    border-radius: 5px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: background-color 0.3s;
+}
+
+.btn-edit {
+    background-color: #3498db;
+    color: white;
+}
+
+.btn-edit:hover {
+    background-color: #2980b9;
+}
+
+.btn-delete {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.btn-delete:hover {
+    background-color: #c0392b;
+}
+
+.icon {
+    font-size: 16px;
+}
+===== perfil.css ===== 
+/* myapp/static/css/profile.css */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+}
+
+.profile-page {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos del encabezado */
+.profile-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+}
+
+.btn {
+    padding: 10px 20px;
+    text-decoration: none;
+    font-size: 16px;
+    border-radius: 5px;
+    color: white;
+    transition: background-color 0.3s;
+}
+
+.btn-back {
+    background-color: #3498db;
+}
+
+.btn-back:hover {
+    background-color: #2980b9;
+}
+
+.btn-logout {
+    background-color: #e74c3c;
+}
+
+.btn-logout:hover {
+    background-color: #c0392b;
+}
+
+/* Estilos de la sección del perfil - VERSIÓN CORREGIDA */
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 30px;
+    gap: 15px;
+}
+
+.profile-picture {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #27ae60;
+}
+
+.profile-icon {
+    width: 120px;
+    height: 120px;
+    background-color: #27ae60;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 50px;
+    color: white;
+}
+
+.username {
+    font-size: 22px;
+    font-weight: bold;
+    color: #333;
+    padding: 8px 16px;
+    background-color: #f0f0f0;
+    border-radius: 20px;
+}
+
+/* Estilos de la sección de notas */
+.notes-section {
+    background-color: #2980b9;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.notes-section h2 {
+    color: white;
+    font-size: 24px;
+    margin-bottom: 15px;
+}
+
+.notes-list {
+    list-style: none;
+    color: white;
+}
+
+.notes-list li {
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    font-size: 16px;
+}
+
+.notes-list li:last-child {
+    border-bottom: none;
+}

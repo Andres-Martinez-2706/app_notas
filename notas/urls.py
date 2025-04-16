@@ -16,4 +16,6 @@ urlpatterns = [
     path('categorias/', views.categorias_list, name='categorias_list'),
     path('categorias/create/', views.categoria_create, name='categoria_create'),
     path('categorias/delete/<int:categoria_id>/', views.categoria_delete, name='categoria_delete'),
+    path('borrar-imagen/', views.borrar_imagen, name='borrar_imagen'),
+
 ]

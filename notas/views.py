@@ -1,5 +1,5 @@
 from django.shortcuts import render,redirect,get_object_or_404
-from .forms import NotaForm, UserCreationFormWithImage
+from .forms import NotaForm, UserCreationFormWithImage, ProfileImageForm
 from .models import Nota, Categoria
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -62,8 +62,22 @@ def notas_view(request):
 
 @login_required
 def perfil(request):
-    notas = Nota.objects.filter(author=request.user).order_by('-created_at')  # Muestra solo los del usuario actual
-    return render(request, 'notas/perfil.html', {'notas': notas})
+    notas = Nota.objects.filter(author=request.user).order_by('-created_at')
+    profile = request.user.profile
+
+    if request.method == 'POST':
+        form = ProfileImageForm(request.POST, request.FILES, instance=profile)
+        if form.is_valid():
+            form.save()
+            return redirect('perfil')
+    else:
+        form = ProfileImageForm(instance=profile)
+
+    return render(request, 'notas/perfil.html', {
+        'notas': notas,
+        'form': form
+    })
+
 
 @login_required
 def notas_edit(request, nota_id):
@@ -151,3 +165,11 @@ def categoria_delete(request, categoria_id):
         if not categoria.usuarios.exists() and not categoria.notas.exists():
             categoria.delete()
     return redirect('categorias_list')
+
+@login_required
+def borrar_imagen(request):
+    profile = request.user.profile
+    if profile.profile_picture:
+        profile.profile_picture.delete()
+        profile.save()
+    return redirect('perfil')

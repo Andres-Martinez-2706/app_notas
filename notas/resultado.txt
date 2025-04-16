@@ -1,9 +1,10 @@
 ===== admin.py ===== 
 from django.contrib import admin
-from .models import Nota
+from .models import Nota, Categoria
 
 # Register your models here.
 admin.site.register(Nota)
+admin.site.register(Categoria)
 
 ===== apps.py ===== 
 from django.apps import AppConfig
@@ -15,7 +16,10 @@ class NotasConfig(AppConfig):
 
 ===== forms.py ===== 
 from django import forms
-from .models import Nota, Categoria
+from .models import Nota, Categoria, Profile
+from django.db.models import Q
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 
 
 class NotaForm(forms.ModelForm):
@@ -38,7 +42,34 @@ class NotaForm(forms.ModelForm):
             'descripcion': 'Descripción',
             'imagen': 'Imagen',
         }
+    def __init__(self, user, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Filtrar categorías: predeterminadas o usadas por el usuario
+        self.fields['categorias'].queryset = Categoria.objects.filter(
+            Q(usuarios=user) | Q(es_predeterminada=True)
+        )
     
+class UserCreationFormWithImage(UserCreationForm):
+    profile_picture = forms.ImageField(required=False, label="Foto de perfil")
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = ('username', 'password1', 'password2', 'profile_picture')
+        labels = {
+            'username': 'Nombre de usuario',
+            'password1': 'Contraseña',
+            'password2': 'Confirmar contraseña',
+        }
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        if commit:
+            user.save()
+            profile_picture = self.cleaned_data.get('profile_picture')
+        # Crea el perfil incluso si no hay imagen
+            Profile.objects.create(user=user, profile_picture=profile_picture if profile_picture else None)
+        return user
+
 ===== models.py ===== 
 from django.db import models
 from ckeditor_uploader.fields import RichTextUploadingField # type: ignore
@@ -78,6 +109,10 @@ class Nota(models.Model):
     
     def __str__(self):
         return self.titulo
+    
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
 ===== tests.py ===== 
 from django.test import TestCase
 
@@ -99,11 +134,14 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
     path('login/', LoginView.as_view(template_name='notas/login.html'), name='login'),
     path('register/', views.create_user, name='register'),
+    path('categorias/', views.categorias_list, name='categorias_list'),
+    path('categorias/create/', views.categoria_create, name='categoria_create'),
+    path('categorias/delete/<int:categoria_id>/', views.categoria_delete, name='categoria_delete'),
 ]
 ===== views.py ===== 
 from django.shortcuts import render,redirect,get_object_or_404
-from .forms import NotaForm
-from .models import Nota
+from .forms import NotaForm, UserCreationFormWithImage
+from .models import Nota, Categoria
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
@@ -112,17 +150,20 @@ from django.db.models import Q
 
 def create_user(request):
     if request.method == 'POST':
-        if request.POST['password1'] == request.POST['password2']:
-            try:
-                user = User.objects.create_user(username=request.POST['username'],password=request.POST['password1'])
-                user.save()
-                return redirect('notas')
-            except:       
-                return render (request, 'notas/create_user.html',{
-                    'form':UserCreationForm(),
-                    'error':"El nombre de usuario ya existe" 
-                    })
-    return render (request, 'notas/create_user.html',{'form':UserCreationForm(),'error':"contraseñas no coinciden"})
+        form = UserCreationFormWithImage(request.POST, request.FILES)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect('notas')
+        else:
+            return render(request, 'notas/create_user.html', {
+                'form': form,
+            })
+    else:
+        form = UserCreationFormWithImage()
+    return render(request, 'notas/create_user.html', {
+        'form': form,
+    })
 
     
 
@@ -167,36 +208,57 @@ def perfil(request):
 
 @login_required
 def notas_edit(request, nota_id):
-    nota = get_object_or_404(Nota, id=nota_id)
+    nota = get_object_or_404(Nota, id=nota_id, author=request.user)
     if request.method == 'POST':
-        form = NotaForm(request.POST, request.FILES, instance=nota)
+        form = NotaForm(request.user, request.POST, request.FILES, instance=nota)
         if form.is_valid():
-            form.save()
+            # Guardar la nota sin guardar las relaciones ManyToMany todavía
+            nota = form.save(commit=False)
+            nota.save()  # Guardar la nota en la base de datos
+            form.save_m2m()  # Guardar las categorías seleccionadas en el formulario
+
+            # Manejar nueva categoría
+            nueva_categoria = form.cleaned_data.get('nueva_categoria')
+            if nueva_categoria:
+                categoria, created = Categoria.objects.get_or_create(nombre=nueva_categoria)
+                categoria.usuarios.add(request.user)
+                nota.categorias.add(categoria)  # Añadir la nueva categoría
+
             return redirect('notas')
     else:
-        form = NotaForm(instance=nota)
-    return render(request, 'notas/notas_edit.html', {'form': form})
+        form = NotaForm(user=request.user, instance=nota)
+    return render(request, 'notas/notas_edit.html', {'form': form, 'nota': nota})
 
 @login_required
 def notas_create(request):
     if request.method == 'POST':
-        form = NotaForm(request.POST, request.FILES)
+        form = NotaForm(request.user, request.POST, request.FILES)
         if form.is_valid():
-            note = form.save(commit=False)
-            note.author = request.user  # Asignar el usuario actual
-            note.save()
+            # Guardar la nota sin guardar las relaciones ManyToMany todavía
+            nota = form.save(commit=False)
+            nota.author = request.user  # Asignar el usuario actual
+            nota.save()  # Guardar la nota en la base de datos
+            form.save_m2m()  # Guarda las categorías seleccionadas en el formulario
+
+            # Manejar nueva categoría
+            nueva_categoria = form.cleaned_data.get('nueva_categoria')
+            if nueva_categoria:
+                # Asegurarse de que la categoría se cree y guarde correctamente
+                categoria, created = Categoria.objects.get_or_create(nombre=nueva_categoria)
+                categoria.usuarios.add(request.user)
+                # Añadir la nueva categoría a la nota
+                nota.categorias.add(categoria)
+
             return redirect('notas')
     else:
-        form = NotaForm()
+        form = NotaForm(user=request.user)
     return render(request, 'notas/notas_create.html', {'form': form})
-
 
 @login_required
 def nota_detail(request, nota_id):
-    note = get_object_or_404(Nota, id=nota_id)
+    nota = get_object_or_404(Nota, id=nota_id,author=request.user)
     return render(request, 'notas/nota_detail.html', {
-        'nota': note,
-
+        'nota': nota,
     })
 
 @login_required
@@ -207,18 +269,40 @@ def notas_delete(request, nota_id):
     return redirect('notas')
 
 
+@login_required
+def categorias_list(request):
+    categorias = Categoria.objects.filter(Q(usuarios=request.user) | Q(es_predeterminada=True))
+    return render(request, 'notas/categorias_list.html', {'categorias': categorias})
 
-# Create your views here.
+@login_required
+def categoria_create(request):
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre')
+        if nombre:
+            categoria, created = Categoria.objects.get_or_create(nombre=nombre)
+            categoria.usuarios.add(request.user)
+            return redirect('categorias_list')
+    return render(request, 'notas/categoria_form.html')
+
+@login_required
+def categoria_delete(request, categoria_id):
+    categoria = get_object_or_404(Categoria, id=categoria_id)
+    if not categoria.es_predeterminada and request.user in categoria.usuarios.all():
+        categoria.usuarios.remove(request.user)
+        if not categoria.usuarios.exists() and not categoria.notas.exists():
+            categoria.delete()
+    return redirect('categorias_list')
 
 ===== __init__.py ===== 
 
 ===== resultado.txt ===== 
 ===== admin.py ===== 
 from django.contrib import admin
-from .models import Nota
+from .models import Nota, Categoria
 
 # Register your models here.
 admin.site.register(Nota)
+admin.site.register(Categoria)
 
 ===== apps.py ===== 
 from django.apps import AppConfig
@@ -230,7 +314,10 @@ class NotasConfig(AppConfig):
 
 ===== forms.py ===== 
 from django import forms
-from .models import Nota, Categoria
+from .models import Nota, Categoria, Profile
+from django.db.models import Q
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 
 
 class NotaForm(forms.ModelForm):
@@ -253,7 +340,34 @@ class NotaForm(forms.ModelForm):
             'descripcion': 'Descripción',
             'imagen': 'Imagen',
         }
+    def __init__(self, user, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Filtrar categorías: predeterminadas o usadas por el usuario
+        self.fields['categorias'].queryset = Categoria.objects.filter(
+            Q(usuarios=user) | Q(es_predeterminada=True)
+        )
     
+class UserCreationFormWithImage(UserCreationForm):
+    profile_picture = forms.ImageField(required=False, label="Foto de perfil")
+
+    class Meta(UserCreationForm.Meta):
+        model = User
+        fields = ('username', 'password1', 'password2', 'profile_picture')
+        labels = {
+            'username': 'Nombre de usuario',
+            'password1': 'Contraseña',
+            'password2': 'Confirmar contraseña',
+        }
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        if commit:
+            user.save()
+            profile_picture = self.cleaned_data.get('profile_picture')
+        # Crea el perfil incluso si no hay imagen
+            Profile.objects.create(user=user, profile_picture=profile_picture if profile_picture else None)
+        return user
+
 ===== models.py ===== 
 from django.db import models
 from ckeditor_uploader.fields import RichTextUploadingField # type: ignore
@@ -293,6 +407,10 @@ class Nota(models.Model):
     
     def __str__(self):
         return self.titulo
+    
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    profile_picture = models.ImageField(upload_to='profile_pics/', blank=True, null=True)
 ===== tests.py ===== 
 from django.test import TestCase
 
@@ -314,11 +432,14 @@ urlpatterns = [
     path("logout/", views.logout_view, name="logout"),
     path('login/', LoginView.as_view(template_name='notas/login.html'), name='login'),
     path('register/', views.create_user, name='register'),
+    path('categorias/', views.categorias_list, name='categorias_list'),
+    path('categorias/create/', views.categoria_create, name='categoria_create'),
+    path('categorias/delete/<int:categoria_id>/', views.categoria_delete, name='categoria_delete'),
 ]
 ===== views.py ===== 
 from django.shortcuts import render,redirect,get_object_or_404
-from .forms import NotaForm
-from .models import Nota
+from .forms import NotaForm, UserCreationFormWithImage
+from .models import Nota, Categoria
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
@@ -327,17 +448,20 @@ from django.db.models import Q
 
 def create_user(request):
     if request.method == 'POST':
-        if request.POST['password1'] == request.POST['password2']:
-            try:
-                user = User.objects.create_user(username=request.POST['username'],password=request.POST['password1'])
-                user.save()
-                return redirect('notas')
-            except:       
-                return render (request, 'notas/create_user.html',{
-                    'form':UserCreationForm(),
-                    'error':"El nombre de usuario ya existe" 
-                    })
-    return render (request, 'notas/create_user.html',{'form':UserCreationForm(),'error':"contraseñas no coinciden"})
+        form = UserCreationFormWithImage(request.POST, request.FILES)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect('notas')
+        else:
+            return render(request, 'notas/create_user.html', {
+                'form': form,
+            })
+    else:
+        form = UserCreationFormWithImage()
+    return render(request, 'notas/create_user.html', {
+        'form': form,
+    })
 
     
 
@@ -382,36 +506,57 @@ def perfil(request):
 
 @login_required
 def notas_edit(request, nota_id):
-    nota = get_object_or_404(Nota, id=nota_id)
+    nota = get_object_or_404(Nota, id=nota_id, author=request.user)
     if request.method == 'POST':
-        form = NotaForm(request.POST, request.FILES, instance=nota)
+        form = NotaForm(request.user, request.POST, request.FILES, instance=nota)
         if form.is_valid():
-            form.save()
+            # Guardar la nota sin guardar las relaciones ManyToMany todavía
+            nota = form.save(commit=False)
+            nota.save()  # Guardar la nota en la base de datos
+            form.save_m2m()  # Guardar las categorías seleccionadas en el formulario
+
+            # Manejar nueva categoría
+            nueva_categoria = form.cleaned_data.get('nueva_categoria')
+            if nueva_categoria:
+                categoria, created = Categoria.objects.get_or_create(nombre=nueva_categoria)
+                categoria.usuarios.add(request.user)
+                nota.categorias.add(categoria)  # Añadir la nueva categoría
+
             return redirect('notas')
     else:
-        form = NotaForm(instance=nota)
-    return render(request, 'notas/notas_edit.html', {'form': form})
+        form = NotaForm(user=request.user, instance=nota)
+    return render(request, 'notas/notas_edit.html', {'form': form, 'nota': nota})
 
 @login_required
 def notas_create(request):
     if request.method == 'POST':
-        form = NotaForm(request.POST, request.FILES)
+        form = NotaForm(request.user, request.POST, request.FILES)
         if form.is_valid():
-            note = form.save(commit=False)
-            note.author = request.user  # Asignar el usuario actual
-            note.save()
+            # Guardar la nota sin guardar las relaciones ManyToMany todavía
+            nota = form.save(commit=False)
+            nota.author = request.user  # Asignar el usuario actual
+            nota.save()  # Guardar la nota en la base de datos
+            form.save_m2m()  # Guarda las categorías seleccionadas en el formulario
+
+            # Manejar nueva categoría
+            nueva_categoria = form.cleaned_data.get('nueva_categoria')
+            if nueva_categoria:
+                # Asegurarse de que la categoría se cree y guarde correctamente
+                categoria, created = Categoria.objects.get_or_create(nombre=nueva_categoria)
+                categoria.usuarios.add(request.user)
+                # Añadir la nueva categoría a la nota
+                nota.categorias.add(categoria)
+
             return redirect('notas')
     else:
-        form = NotaForm()
+        form = NotaForm(user=request.user)
     return render(request, 'notas/notas_create.html', {'form': form})
-
 
 @login_required
 def nota_detail(request, nota_id):
-    note = get_object_or_404(Nota, id=nota_id)
+    nota = get_object_or_404(Nota, id=nota_id,author=request.user)
     return render(request, 'notas/nota_detail.html', {
-        'nota': note,
-
+        'nota': nota,
     })
 
 @login_required
@@ -422,89 +567,229 @@ def notas_delete(request, nota_id):
     return redirect('notas')
 
 
+@login_required
+def categorias_list(request):
+    categorias = Categoria.objects.filter(Q(usuarios=request.user) | Q(es_predeterminada=True))
+    return render(request, 'notas/categorias_list.html', {'categorias': categorias})
 
-# Create your views here.
+@login_required
+def categoria_create(request):
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre')
+        if nombre:
+            categoria, created = Categoria.objects.get_or_create(nombre=nombre)
+            categoria.usuarios.add(request.user)
+            return redirect('categorias_list')
+    return render(request, 'notas/categoria_form.html')
+
+@login_required
+def categoria_delete(request, categoria_id):
+    categoria = get_object_or_404(Categoria, id=categoria_id)
+    if not categoria.es_predeterminada and request.user in categoria.usuarios.all():
+        categoria.usuarios.remove(request.user)
+        if not categoria.usuarios.exists() and not categoria.notas.exists():
+            categoria.delete()
+    return redirect('categorias_list')
 
 ===== __init__.py ===== 
 
 ===== resultado.txt ===== 
 ===== admin.py ===== 
 from django.contrib import admin
-from .
+from .models import Nota, Categori
 ===== resultado1.txt ===== 
 ===== base.html ===== 
-<!-- myapp/templates/base.html -->
+<!-- notas/base.html -->
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>{% block title %}Mi Aplicación{% endblock %}</title>
-		<link rel="stylesheet" href="{% static 'notas/css/base.css' %}" />
-		{% block head %} {% endblock head %}
-  	</head>
-  	<body>
-		<div class="container">
-			
-			<nav class="sidebar">
-				<div class="sidebar-header">
-					<h2>📚App Notas</h2>
-				</div>
-				<ul>
-					<li>
-						<a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">🏠 Inicio</a>
-					</li>
-					
-					{% if user.is_staff or user.is_superuser %}
-						<li><a href="{% url 'admin:index' %}">🛠️Administración</a></li>
-					{% endif %}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Mi Aplicación{% endblock %}</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"
+    />
+    <link rel="stylesheet" href="{% static 'notas/css/base.css' %}" />
+    {% block head %}{% endblock head %}
+  </head>
+  <body>
+    <div class="container">
+      <nav class="sidebar">
+        <div class="sidebar-header">
+          <h2>📚App Notas</h2>
+        </div>
+        <ul>
+          <li>
+            <a
+              href="{% url 'home' %}"
+              class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}"
+              >🏠 Inicio</a
+            >
+          </li>
 
-					{% if user.is_authenticated %}
-						<li>
-							<a href="{% url 'notas' %}" class="{% if request.resolver_match.url_name == 'notas' %}active{% endif %}">📝Mis Notas</a>
-						</li>
-						<li>
-							<a href="{% url 'perfil' %}" class="{% if request.resolver_match.url_name == 'perfil' %}active{% endif %}">👨🏻‍💻Perfil</a>
-						</li>
-						<li>
-							<a href="{% url 'logout' %}">❌Cerrar Sesión</a>
-						</li>
+          {% if user.is_staff or user.is_superuser %}
+          <li><a href="{% url 'admin:index' %}">🛠️Administración</a></li>
+          {% endif %} {% if user.is_authenticated %}
+          <li>
+            <a
+              href="{% url 'notas' %}"
+              class="{% if request.resolver_match.url_name == 'notas' %}active{% endif %}"
+              >📝Mis Notas</a
+            >
+          </li>
+          <li>
+            <a
+              href="{% url 'categorias_list' %}"
+              class="{% if request.resolver_match.url_name == 'categorias_list' %}active{% endif %}"
+              >🏷️Categorías</a
+            >
+          </li>
+          <li>
+            <a
+              href="{% url 'perfil' %}"
+              class="{% if request.resolver_match.url_name == 'perfil' %}active{% endif %}"
+              >👨🏻‍💻Perfil</a
+            >
+          </li>
+          <li>
+            <a href="{% url 'logout' %}">❌Cerrar Sesión</a>
+          </li>
+          {% else %}
+          <li>
+            <a
+              href="{% url 'login' %}"
+              class="{% if request.resolver_match.url_name == 'login' %}active{% endif %}"
+              >✅Iniciar Sesión</a
+            >
+          </li>
+          <li>
+            <a
+              href="{% url 'register' %}"
+              class="{% if request.resolver_match.url_name == 'register' %}active{% endif %}"
+              >👤Crear Usuario</a
+            >
+          </li>
+          {% endif %}
+        </ul>
+      </nav>
 
-					{% else %}
-						<li>
-							<a href="{% url 'login' %}" class="{% if request.resolver_match.url_name == 'login' %}active{% endif %}">✅Iniciar Sesión</a>
-						</li>
-						<li><a href="{% url 'register' %}" class="{% if request.resolver_match.url_name == 'register' %}active{% endif %}">👤Crear Usuario</a></li>
-					{% endif %}
-				
-				</ul>
-			</nav>
-
-			<!-- Área de contenido principal -->
-			<main class="content">
-				{% block content %}
-				<!-- Este bloque será sobrescrito por otras páginas -->
-
-				{% endblock %}
-			</main>
-		</div>
-  	</body>
+      <!-- Área de contenido principal -->
+      <main class="content">
+        {% block content %} 
+       
+        <!-- Este bloque será sobrescrito por otras páginas -->
+        {% endblock %}
+      </main>
+    </div>
+  </body>
 </html>
 
-===== create_user.html ===== 
-{% extends 'notas/base.html' %} {% block content %}
+===== categorias_list.html ===== 
+<!-- notas/categorias_list.html -->
+{% extends "notas/base.html" %}
 {% load static %}
-{% block head %}
-<link rel="stylesheet" href="{% static 'notas/css/create_user.css' %}">
-{% endblock head %}
 
+{% block head %}
+    <link rel="stylesheet" href="{% static 'notas/css/categorias.css' %}">
+{% endblock %}
+
+{% block title %}Mis Categorías - Mi Aplicación{% endblock %}
+
+{% block content %}
+    <div class="categorias-page">
+        <h2>Mis Categorías</h2>
+        <a href="{% url 'categoria_create' %}" class="btn btn-create">Nueva Categoría</a>
+
+        <div class="categorias-list">
+            {% for categoria in categorias %}
+                <div class="categoria-card">
+                    <h3>{{ categoria.nombre }}</h3>
+                    <p>
+                        {% if categoria.es_predeterminada %}
+                            (Predeterminada)
+                        {% else %}
+                            <a href="{% url 'categoria_delete' categoria.id %}" class="btn btn-delete" onclick="return confirm('¿Estás seguro de que quieres dejar de usar esta categoría? Se removerá de tus notas asociadas si no es usada por otros usuarios.')">Dejar de usar</a>
+                        {% endif %}
+                    </p>
+                </div>
+            {% empty %}
+                <p>No tienes categorías. Crea una nueva categoría.</p>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}
+===== categoria_form.html ===== 
+<!-- notas/categoria_form.html -->
+{% extends "notas/base.html" %}
+{% load static %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'notas/css/categorias.css' %}">
+{% endblock %}
+
+{% block title %}Crear Categoría - Mi Aplicación{% endblock %}
+
+{% block content %}
+    <div class="categorias-page">
+        <h2>Crear Nueva Categoría</h2>
+
+        <form method="post" class="categoria-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="nombre">Nombre</label>
+                <input type="text" name="nombre" id="nombre" required>
+            </div>
+            <button type="submit" class="btn btn-save">Guardar Categoría</button>
+        </form>
+    </div>
+{% endblock %}
+===== create_user.html ===== 
+{% extends 'notas/base.html' %} {% load static %} {% block head %}
+<link rel="stylesheet" href="{% static 'notas/css/create_user.css' %}" />
+{% endblock head %} {% block content %}
 <div id="card_user">
-  <h4 id="error">{{error}}</h4>
-  <form action="{% url 'register' %}" method="POST">
-  {% csrf_token %}
-  {{form.as_p}}
-  <button id="boton" type="submit">💾Guardar</button>
+  <h4 id="error">
+    <!-- Mostrar errores generales -->
+    {% if form.errors %}
+    <div class="alert alert-danger">
+      {% for field in form %} {% for error in field.errors %}
+      <p><strong>{{ field.label }}:</strong> {{ error }}</p>
+      {% endfor %} {% endfor %} {% for error in form.non_field_errors %}
+      <p>{{ error }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </h4>
+  <form
+    action="{% url 'register' %}"
+    method="POST"
+    enctype="multipart/form-data"
+  >
+    {% csrf_token %}
+    <p>
+      <label for="{{ form.username.id_for_label }}">Nombre de usuario:</label>
+      {{ form.username }}
+    </p>
+    <p>
+      <label for="{{ form.password1.id_for_label }}">Contraseña:</label>
+      {{ form.password1 }}
+    </p>
+    <p>
+      <label for="{{ form.password2.id_for_label }}"
+        >Confirmar contraseña:</label
+      >
+      {{ form.password2 }}
+    </p>
+
+    <p>
+      <label for="{{ form.profile_picture.id_for_label }}"
+        >Foto de perfil:</label
+      >
+      {{ form.profile_picture }}
+    </p>
+    <button id="boton" type="submit">💾Guardar</button>
   </form>
 </div>
 {% endblock %}
@@ -559,84 +844,85 @@ from .
 </div>
 {% endblock %}
 ===== notas.html ===== 
-<!-- myapp/templates/notes.html -->
-{% extends "notas/base.html" %} {% load static %} {% load filters %} 
+<!-- notas/notas.html -->
+{% extends "notas/base.html" %}
+{% load static %}
+{% load filters %}
+
 {% block head %}
-<link rel="stylesheet" href="{% static 'notas/css/notas.css' %}" />
+    <link rel="stylesheet" href="{% static 'notas/css/notas.css' %}" />
 {% endblock %}
 
-<!--
-{% block header %}
-    <header>
-        <h1>Notas</h1>
-        <nav>
-            <a href="{% url 'home' %}">Inicio</a>
-            <a href="{% url 'create' %}">Crear Nota</a>
-        </nav>
-    </header>
-{% endblock %}
--->
+{% block title %}Notas - Mi Aplicación{% endblock %}
 
-{% block title %}Notas - Mi Aplicación{% endblock %} {% block content %}
-
-<div class="search-bar">
-  <form method="get" action="{% url 'notas' %}">
-    <input
-      type="text"
-      name="q"
-      placeholder="Buscar notas..."
-      value="{{ query }}"
-    />
-    <button type="submit">Buscar</button>
-  </form>
-</div>
-
-<div class="notes-header">
-  <h1>Mis Notas</h1>
-  <a href="{% url 'create' %}" class="btn btn-create">
-    <span>+</span> Nueva Nota
-  </a>
-</div>
-
-<div class="notes-list">
-
-
-  {% for nota in notas %}
-  <div class="note-card">
-    <h3>
-      <a href="{% url 'detail' nota.id %}">{{ nota.titulo }}</a>
-    </h3>
-    <p>{{ nota.descripcion|remove_images|truncatewords:50|safe }}</p>
-    <div class="note-actions">
-      <a href="{% url 'edit' nota.id %}" class="btn btn-edit">
-        <span class="icon">✏️</span> Editar
-      </a>
-      <a
-        href="{% url 'delete' nota.id %}"
-        class="btn btn-delete"
-        onclick="return confirmDelete(event, this.href);"
-      >
-        <span class="icon">🗑️</span> Eliminar
-      </a>
+{% block content %}
+    <div class="search-bar">
+        <form method="get" action="{% url 'notas' %}">
+            <input
+                type="text"
+                name="q"
+                placeholder="Buscar notas..."
+                value="{{ query }}"
+            />
+            <button type="submit">Buscar</button>
+        </form>
     </div>
-  </div>
-  {% empty %}
-  <p>No hay notas disponibles. ¡Crea una nueva nota!</p>
-  {% endfor %}
-</div>
 
-<script>
-  function confirmDelete(event, url) {
-    event.preventDefault(); // Evita la redirección inmediata
-    if (confirm("¿Estás seguro de que quieres eliminar esta nota?")) {
-      window.location.href = url; // Redirige al enlace si se confirma
-    }
-    return false; // Evita la acción por defecto si no se confirma
-  }
-</script>
+    <div class="notes-header">
+        <h1>Mis Notas</h1>
+        <div class="notes-actions">
+            <a href="{% url 'categorias_list' %}" class="btn btn-categorias">Gestionar Categorías</a>
+            <a href="{% url 'create' %}" class="btn btn-create">
+                <span>+</span> Nueva Nota
+            </a>
+        </div>
+    </div>
+
+    <div class="notes-list">
+        {% for nota in notas %}
+            <div class="note-card">
+                <h3>
+                    <a href="{% url 'detail' nota.id %}">{{ nota.titulo }}</a>
+                </h3>
+                <p>{{ nota.descripcion|remove_images|truncatewords:50|safe }}</p>
+                <div class="note-categories">
+                    <strong>Categorías:</strong>
+                    {% for categoria in nota.categorias.all %}
+                        {{ categoria.nombre }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                        Sin categorías
+                    {% endfor %}
+                </div>
+                <div class="note-actions">
+                    <a href="{% url 'edit' nota.id %}" class="btn btn-edit">
+                        <span class="icon">✏️</span> Editar
+                    </a>
+                    <a
+                        href="{% url 'delete' nota.id %}"
+                        class="btn btn-delete"
+                        onclick="return confirmDelete(event, this.href);"
+                    >
+                        <span class="icon">🗑️</span> Eliminar
+                    </a>
+                </div>
+            </div>
+        {% empty %}
+            <p>No hay notas disponibles. ¡Crea una nueva nota!</p>
+        {% endfor %}
+    </div>
+
+    <script>
+        function confirmDelete(event, url) {
+            event.preventDefault();
+            if (confirm("¿Estás seguro de que quieres eliminar esta nota?")) {
+                window.location.href = url;
+            }
+            return false;
+        }
+    </script>
 {% endblock %}
-
 ===== notas_create.html ===== 
+<!-- notas/notas_create.html -->
 {% extends "notas/base.html" %}
 {% load static %}
 
@@ -655,7 +941,26 @@ from .
 
         <form method="post" enctype="multipart/form-data" class="note-form">
             {% csrf_token %}
-            {{ form.as_p }}
+            <div class="form-group">
+                <label for="id_titulo">Título</label>
+                {{ form.titulo }}
+            </div>
+            <div class="form-group">
+                <label for="id_descripcion">Descripción</label>
+                {{ form.descripcion }}
+            </div>
+            <div class="form-group">
+                <label for="id_imagen">Imagen</label>
+                {{ form.imagen }}
+            </div>
+            <div class="form-group">
+                <label>Categorías</label>
+                {{ form.categorias }}
+            </div>
+            <div class="form-group">
+                <label for="id_nueva_categoria">Nueva Categoría (opcional)</label>
+                {{ form.nueva_categoria }}
+            </div>
 
             <div class="image-preview">
                 <img id="preview" src="#" alt="Vista previa" style="max-width: 100%; max-height: 100%; display: none;">
@@ -698,6 +1003,7 @@ from .
 ===== notas_delete.html ===== 
 
 ===== notas_edit.html ===== 
+<!-- notas/notas_edit.html -->
 {% extends "notas/base.html" %}
 {% load static %}
 
@@ -712,18 +1018,41 @@ from .
         <!-- Botón de regreso -->
         <button class="btn-back" onclick="window.history.back()">Regresar</button>
         
-        <h2>Crear Nueva Nota</h2>
+        <h2>Editar Nota</h2>
 
         <form method="post" enctype="multipart/form-data" class="note-form">
             {% csrf_token %}
-            {{ form.as_p }}
+            <div class="form-group">
+                <label for="id_titulo">Título</label>
+                {{ form.titulo }}
+            </div>
+            <div class="form-group">
+                <label for="id_descripcion">Descripción</label>
+                {{ form.descripcion }}
+            </div>
+            <div class="form-group">
+                <label for="id_imagen">Imagen</label>
+                {{ form.imagen }}
+            </div>
+            <div class="form-group">
+                <label>Categorías</label>
+                {{ form.categorias }}
+            </div>
+            <div class="form-group">
+                <label for="id_nueva_categoria">Nueva Categoría (opcional)</label>
+                {{ form.nueva_categoria }}
+            </div>
 
             <div class="image-preview">
-                <img id="preview" src="#" alt="Vista previa" style="max-width: 100%; max-height: 100%; display: none;">
+                {% if nota.imagen %}
+                    <img id="preview" src="{{ nota.imagen.url }}" alt="Vista previa" style="max-width: 100%; max-height: 100%;">
+                {% else %}
+                    <img id="preview" src="#" alt="Vista previa" style="max-width: 100%; max-height: 100%; display: none;">
+                {% endif %}
             </div>
 
             <br>
-            <button type="submit" class="btn btn-save">Guardar Nota</button>
+            <button type="submit" class="btn btn-save">Guardar Cambios</button>
         </form>
     </div>
 
@@ -757,8 +1086,7 @@ from .
     </script>
 {% endblock %}
 ===== nota_detail.html ===== 
-
-<!-- myapp/templates/note_detail.html -->
+<!-- notas/nota_detail.html -->
 {% extends "notas/base.html" %}
 
 {% block title %}Detalles de la Nota{% endblock %}
@@ -770,9 +1098,6 @@ from .
 
 {% block content %}
     <div class="note-detail-page">
-        <!-- Botón para regresar al inicio -->
-         
-        
         <div class="note-actions">
             <a href="{% url 'notas' %}" class="btn btn-back">Volver Atras</a>
             <a href="{% url 'edit' nota.id %}" class="btn btn-edit">
@@ -783,7 +1108,6 @@ from .
             </a>
         </div>
 
-        <!-- Sección de detalles de la nota -->
         <div class="note-cover">
             {% if nota.imagen %}
                 <img src="{{ nota.imagen.url }}" alt="Portada de la nota">
@@ -794,6 +1118,15 @@ from .
 
         <h2 class="note-title">{{ nota.titulo }}</h2>
 
+        <div class="note-categories">
+            <strong>Categorías:</strong>
+            {% for categoria in nota.categorias.all %}
+                {{ categoria.nombre }}{% if not forloop.last %}, {% endif %}
+            {% empty %}
+                Sin categorías
+            {% endfor %}
+        </div>
+
         <div class="note-content">
             <p>{{ nota.descripcion |safe }}</p>
         </div>
@@ -801,126 +1134,249 @@ from .
 
     <script>
         function confirmDelete(event, url) {
-            event.preventDefault(); // Evita la redirección inmediata
+            event.preventDefault();
             if (confirm("¿Estás seguro de que quieres eliminar esta nota?")) {
-                window.location.href = url; // Redirige al enlace si se confirma
+                window.location.href = url;
             }
-            return false; // Evita la acción por defecto si no se confirma
+            return false;
         }
     </script>
 {% endblock %}
 ===== perfil.html ===== 
-<!-- notas/templates/profile.html -->
 {% extends "notas/base.html" %}
 {% load static %}
-
 {% block head %}
-    <link rel="stylesheet" href="{% static 'notas/css/perfil.css' %}">
+<link rel="stylesheet" href="{% static 'notas/css/perfil.css' %}" />
 {% endblock %}
 
 {% block title %}Perfil - Mi Aplicación{% endblock %}
 
 {% block content %}
-    <div class="profile-page">
-        <!-- Encabezado con botones -->
-        <div class="profile-header">
-            <a href="{% url 'home' %}" class="btn btn-back">Volver al Inicio</a>
-            <a href="{% url 'logout' %}" class="btn btn-logout">Cerrar Sesión</a>
-        </div>
+<div class="profile-page">
+  <!-- Encabezado con botones -->
+  <div class="profile-header">
+    <a href="{% url 'home' %}" class="btn btn-back">Volver al Inicio</a>
+    <a href="{% url 'logout' %}" class="btn btn-logout">Cerrar Sesión</a>
+  </div>
 
-        <!-- Sección del perfil -->
-        <div class="profile-info">
-            <div class="profile-icon">👤</div>
-            <div class="username">{{ user.username }}</div>
-        </div>
+  <!-- Sección del perfil - Versión simplificada -->
+  <div class="profile-info">
+    {% if user.profile.profile_picture %}
+      <img src="{{ user.profile.profile_picture.url }}" 
+           alt="Foto de perfil" 
+           class="profile-picture">
+    {% else %}
+      <div class="profile-icon">👤</div>
+    {% endif %}
+    <div class="username">{{ user.username }}</div>
+  </div>
 
-        <!-- Lista de notas -->
-        <div class="notes-section">
-            <h2>Tus Notas</h2>
-            <ul class="notes-list">
-                {% for nota in notas %}
-                    <li>{{ nota.titulo }}</li>
-                {% empty %}
-                    <li>No tienes notas creadas.</li>
-                {% endfor %}
-            </ul>
-        </div>
-    </div>
-{% endblock %}
-===== resultado.txt ===== 
+  <!-- Lista de notas -->
+  <div class="notes-section">
+    <h2>Tus Notas</h2>
+    <ul class="notes-list">
+      {% for nota in notas %}
+      <li>{{ nota.titulo }}</li>
+      {% empty %}
+      <li>No tienes notas creadas.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock content %}
+===== resultado1.txt ===== 
 ===== base.html ===== 
-<!-- myapp/templates/base.html -->
+<!-- notas/base.html -->
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>{% block title %}Mi Aplicación{% endblock %}</title>
-		<link rel="stylesheet" href="{% static 'notas/css/base.css' %}" />
-		{% block head %} {% endblock head %}
-  	</head>
-  	<body>
-		<div class="container">
-			
-			<nav class="sidebar">
-				<div class="sidebar-header">
-					<h2>📚App Notas</h2>
-				</div>
-				<ul>
-					<li>
-						<a href="{% url 'home' %}" class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}">🏠 Inicio</a>
-					</li>
-					
-					{% if user.is_staff or user.is_superuser %}
-						<li><a href="{% url 'admin:index' %}">🛠️Administración</a></li>
-					{% endif %}
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Mi Aplicación{% endblock %}</title>
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap"
+    />
+    <link rel="stylesheet" href="{% static 'notas/css/base.css' %}" />
+    {% block head %}{% endblock head %}
+  </head>
+  <body>
+    <div class="container">
+      <nav class="sidebar">
+        <div class="sidebar-header">
+          <h2>📚App Notas</h2>
+        </div>
+        <ul>
+          <li>
+            <a
+              href="{% url 'home' %}"
+              class="{% if request.resolver_match.url_name == 'home' %}active{% endif %}"
+              >🏠 Inicio</a
+            >
+          </li>
 
-					{% if user.is_authenticated %}
-						<li>
-							<a href="{% url 'notas' %}" class="{% if request.resolver_match.url_name == 'notas' %}active{% endif %}">📝Mis Notas</a>
-						</li>
-						<li>
-							<a href="{% url 'perfil' %}" class="{% if request.resolver_match.url_name == 'perfil' %}active{% endif %}">👨🏻‍💻Perfil</a>
-						</li>
-						<li>
-							<a href="{% url 'logout' %}">❌Cerrar Sesión</a>
-						</li>
+          {% if user.is_staff or user.is_superuser %}
+          <li><a href="{% url 'admin:index' %}">🛠️Administración</a></li>
+          {% endif %} {% if user.is_authenticated %}
+          <li>
+            <a
+              href="{% url 'notas' %}"
+              class="{% if request.resolver_match.url_name == 'notas' %}active{% endif %}"
+              >📝Mis Notas</a
+            >
+          </li>
+          <li>
+            <a
+              href="{% url 'categorias_list' %}"
+              class="{% if request.resolver_match.url_name == 'categorias_list' %}active{% endif %}"
+              >🏷️Categorías</a
+            >
+          </li>
+          <li>
+            <a
+              href="{% url 'perfil' %}"
+              class="{% if request.resolver_match.url_name == 'perfil' %}active{% endif %}"
+              >👨🏻‍💻Perfil</a
+            >
+          </li>
+          <li>
+            <a href="{% url 'logout' %}">❌Cerrar Sesión</a>
+          </li>
+          {% else %}
+          <li>
+            <a
+              href="{% url 'login' %}"
+              class="{% if request.resolver_match.url_name == 'login' %}active{% endif %}"
+              >✅Iniciar Sesión</a
+            >
+          </li>
+          <li>
+            <a
+              href="{% url 'register' %}"
+              class="{% if request.resolver_match.url_name == 'register' %}active{% endif %}"
+              >👤Crear Usuario</a
+            >
+          </li>
+          {% endif %}
+        </ul>
+      </nav>
 
-					{% else %}
-						<li>
-							<a href="{% url 'login' %}" class="{% if request.resolver_match.url_name == 'login' %}active{% endif %}">✅Iniciar Sesión</a>
-						</li>
-						<li><a href="{% url 'register' %}" class="{% if request.resolver_match.url_name == 'register' %}active{% endif %}">👤Crear Usuario</a></li>
-					{% endif %}
-				
-				</ul>
-			</nav>
-
-			<!-- Área de contenido principal -->
-			<main class="content">
-				{% block content %}
-				<!-- Este bloque será sobrescrito por otras páginas -->
-
-				{% endblock %}
-			</main>
-		</div>
-  	</body>
+      <!-- Área de contenido principal -->
+      <main class="content">
+        {% block content %} 
+       
+        <!-- Este bloque será sobrescrito por otras páginas -->
+        {% endblock %}
+      </main>
+    </div>
+  </body>
 </html>
 
-===== create_user.html ===== 
-{% extends 'notas/base.html' %} {% block content %}
+===== categorias_list.html ===== 
+<!-- notas/categorias_list.html -->
+{% extends "notas/base.html" %}
 {% load static %}
-{% block head %}
-<link rel="stylesheet" href="{% static 'notas/css/create_user.css' %}">
-{% endblock head %}
 
+{% block head %}
+    <link rel="stylesheet" href="{% static 'notas/css/categorias.css' %}">
+{% endblock %}
+
+{% block title %}Mis Categorías - Mi Aplicación{% endblock %}
+
+{% block content %}
+    <div class="categorias-page">
+        <h2>Mis Categorías</h2>
+        <a href="{% url 'categoria_create' %}" class="btn btn-create">Nueva Categoría</a>
+
+        <div class="categorias-list">
+            {% for categoria in categorias %}
+                <div class="categoria-card">
+                    <h3>{{ categoria.nombre }}</h3>
+                    <p>
+                        {% if categoria.es_predeterminada %}
+                            (Predeterminada)
+                        {% else %}
+                            <a href="{% url 'categoria_delete' categoria.id %}" class="btn btn-delete" onclick="return confirm('¿Estás seguro de que quieres dejar de usar esta categoría? Se removerá de tus notas asociadas si no es usada por otros usuarios.')">Dejar de usar</a>
+                        {% endif %}
+                    </p>
+                </div>
+            {% empty %}
+                <p>No tienes categorías. Crea una nueva categoría.</p>
+            {% endfor %}
+        </div>
+    </div>
+{% endblock %}
+===== categoria_form.html ===== 
+<!-- notas/categoria_form.html -->
+{% extends "notas/base.html" %}
+{% load static %}
+
+{% block head %}
+    <link rel="stylesheet" href="{% static 'notas/css/categorias.css' %}">
+{% endblock %}
+
+{% block title %}Crear Categoría - Mi Aplicación{% endblock %}
+
+{% block content %}
+    <div class="categorias-page">
+        <h2>Crear Nueva Categoría</h2>
+
+        <form method="post" class="categoria-form">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="nombre">Nombre</label>
+                <input type="text" name="nombre" id="nombre" required>
+            </div>
+            <button type="submit" class="btn btn-save">Guardar Categoría</button>
+        </form>
+    </div>
+{% endblock %}
+===== create_user.html ===== 
+{% extends 'notas/base.html' %} {% load static %} {% block head %}
+<link rel="stylesheet" href="{% static 'notas/css/create_user.css' %}" />
+{% endblock head %} {% block content %}
 <div id="card_user">
-  <h4 id="error">{{error}}</h4>
-  <form action="{% url 'register' %}" method="POST">
-  {% csrf_token %}
-  {{form.as_p}}
-  <button id="boton" type="submit">💾Guardar</button>
+  <h4 id="error">
+    <!-- Mostrar errores generales -->
+    {% if form.errors %}
+    <div class="alert alert-danger">
+      {% for field in form %} {% for error in field.errors %}
+      <p><strong>{{ field.label }}:</strong> {{ error }}</p>
+      {% endfor %} {% endfor %} {% for error in form.non_field_errors %}
+      <p>{{ error }}</p>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </h4>
+  <form
+    action="{% url 'register' %}"
+    method="POST"
+    enctype="multipart/form-data"
+  >
+    {% csrf_token %}
+    <p>
+      <label for="{{ form.username.id_for_label }}">Nombre de usuario:</label>
+      {{ form.username }}
+    </p>
+    <p>
+      <label for="{{ form.password1.id_for_label }}">Contraseña:</label>
+      {{ form.password1 }}
+    </p>
+    <p>
+      <label for="{{ form.password2.id_for_label }}"
+        >Confirmar contraseña:</label
+      >
+      {{ form.password2 }}
+    </p>
+
+    <p>
+      <label for="{{ form.profile_picture.id_for_label }}"
+        >Foto de perfil:</label
+      >
+      {{ form.profile_picture }}
+    </p>
+    <button id="boton" type="submit">💾Guardar</button>
   </form>
 </div>
 {% endblock %}
@@ -975,84 +1431,85 @@ from .
 </div>
 {% endblock %}
 ===== notas.html ===== 
-<!-- myapp/templates/notes.html -->
-{% extends "notas/base.html" %} {% load static %} {% load filters %} 
+<!-- notas/notas.html -->
+{% extends "notas/base.html" %}
+{% load static %}
+{% load filters %}
+
 {% block head %}
-<link rel="stylesheet" href="{% static 'notas/css/notas.css' %}" />
+    <link rel="stylesheet" href="{% static 'notas/css/notas.css' %}" />
 {% endblock %}
 
-<!--
-{% block header %}
-    <header>
-        <h1>Notas</h1>
-        <nav>
-            <a href="{% url 'home' %}">Inicio</a>
-            <a href="{% url 'create' %}">Crear Nota</a>
-        </nav>
-    </header>
-{% endblock %}
--->
+{% block title %}Notas - Mi Aplicación{% endblock %}
 
-{% block title %}Notas - Mi Aplicación{% endblock %} {% block content %}
-
-<div class="search-bar">
-  <form method="get" action="{% url 'notas' %}">
-    <input
-      type="text"
-      name="q"
-      placeholder="Buscar notas..."
-      value="{{ query }}"
-    />
-    <button type="submit">Buscar</button>
-  </form>
-</div>
-
-<div class="notes-header">
-  <h1>Mis Notas</h1>
-  <a href="{% url 'create' %}" class="btn btn-create">
-    <span>+</span> Nueva Nota
-  </a>
-</div>
-
-<div class="notes-list">
-
-
-  {% for nota in notas %}
-  <div class="note-card">
-    <h3>
-      <a href="{% url 'detail' nota.id %}">{{ nota.titulo }}</a>
-    </h3>
-    <p>{{ nota.descripcion|remove_images|truncatewords:50|safe }}</p>
-    <div class="note-actions">
-      <a href="{% url 'edit' nota.id %}" class="btn btn-edit">
-        <span class="icon">✏️</span> Editar
-      </a>
-      <a
-        href="{% url 'delete' nota.id %}"
-        class="btn btn-delete"
-        onclick="return confirmDelete(event, this.href);"
-      >
-        <span class="icon">🗑️</span> Eliminar
-      </a>
+{% block content %}
+    <div class="search-bar">
+        <form method="get" action="{% url 'notas' %}">
+            <input
+                type="text"
+                name="q"
+                placeholder="Buscar notas..."
+                value="{{ query }}"
+            />
+            <button type="submit">Buscar</button>
+        </form>
     </div>
-  </div>
-  {% empty %}
-  <p>No hay notas disponibles. ¡Crea una nueva nota!</p>
-  {% endfor %}
-</div>
 
-<script>
-  function confirmDelete(event, url) {
-    event.preventDefault(); // Evita la redirección inmediata
-    if (confirm("¿Estás seguro de que quieres eliminar esta nota?")) {
-      window.location.href = url; // Redirige al enlace si se confirma
-    }
-    return false; // Evita la acción por defecto si no se confirma
-  }
-</script>
+    <div class="notes-header">
+        <h1>Mis Notas</h1>
+        <div class="notes-actions">
+            <a href="{% url 'categorias_list' %}" class="btn btn-categorias">Gestionar Categorías</a>
+            <a href="{% url 'create' %}" class="btn btn-create">
+                <span>+</span> Nueva Nota
+            </a>
+        </div>
+    </div>
+
+    <div class="notes-list">
+        {% for nota in notas %}
+            <div class="note-card">
+                <h3>
+                    <a href="{% url 'detail' nota.id %}">{{ nota.titulo }}</a>
+                </h3>
+                <p>{{ nota.descripcion|remove_images|truncatewords:50|safe }}</p>
+                <div class="note-categories">
+                    <strong>Categorías:</strong>
+                    {% for categoria in nota.categorias.all %}
+                        {{ categoria.nombre }}{% if not forloop.last %}, {% endif %}
+                    {% empty %}
+                        Sin categorías
+                    {% endfor %}
+                </div>
+                <div class="note-actions">
+                    <a href="{% url 'edit' nota.id %}" class="btn btn-edit">
+                        <span class="icon">✏️</span> Editar
+                    </a>
+                    <a
+                        href="{% url 'delete' nota.id %}"
+                        class="btn btn-delete"
+                        onclick="return confirmDelete(event, this.href);"
+                    >
+                        <span class="icon">🗑️</span> Eliminar
+                    </a>
+                </div>
+            </div>
+        {% empty %}
+            <p>No hay notas disponibles. ¡Crea una nueva nota!</p>
+        {% endfor %}
+    </div>
+
+    <script>
+        function confirmDelete(event, url) {
+            event.preventDefault();
+            if (confirm("¿Estás seguro de que quieres eliminar esta nota?")) {
+                window.location.href = url;
+            }
+            return false;
+        }
+    </script>
 {% endblock %}
-
 ===== notas_create.html ===== 
+<!-- notas/notas_create.html -->
 {% extends "notas/base.html" %}
 {% load static %}
 
@@ -1071,7 +1528,26 @@ from .
 
         <form method="post" enctype="multipart/form-data" class="note-form">
             {% csrf_token %}
-            {{ form.as_p }}
+            <div class="form-group">
+                <label for="id_titulo">Título</label>
+                {{ form.titulo }}
+            </div>
+            <div class="form-group">
+                <label for="id_descripcion">Descripción</label>
+                {{ form.descripcion }}
+            </div>
+            <div class="form-group">
+                <label for="id_imagen">Imagen</label>
+                {{ form.imagen }}
+            </div>
+            <div class="form-group">
+                <label>Categorías</label>
+                {{ form.categorias }}
+            </div>
+            <div class="form-group">
+                <label for="id_nueva_categoria">Nueva Categoría (opcional)</label>
+                {{ form.nueva_categoria }}
+            </div>
 
             <div class="image-preview">
                 <img id="preview" src="#" alt="Vista previa" style="max-width: 100%; max-height: 100%; display: none;">
@@ -1114,6 +1590,7 @@ from .
 ===== notas_delete.html ===== 
 
 ===== notas_edit.html ===== 
+<!-- notas/notas_edit.html -->
 {% extends "notas/base.html" %}
 {% load static %}
 
@@ -1128,18 +1605,41 @@ from .
         <!-- Botón de regreso -->
         <button class="btn-back" onclick="window.history.back()">Regresar</button>
         
-        <h2>Crear Nueva Nota</h2>
+        <h2>Editar Nota</h2>
 
         <form method="post" enctype="multipart/form-data" class="note-form">
             {% csrf_token %}
-            {{ form.as_p }}
+            <div class="form-group">
+                <label for="id_titulo">Título</label>
+                {{ form.titulo }}
+            </div>
+            <div class="form-group">
+                <label for="id_descripcion">Descripción</label>
+                {{ form.descripcion }}
+            </div>
+            <div class="form-group">
+                <label for="id_imagen">Imagen</label>
+                {{ form.imagen }}
+            </div>
+            <div class="form-group">
+                <label>Categorías</label>
+                {{ form.categorias }}
+            </div>
+            <div class="form-group">
+                <label for="id_nueva_categoria">Nueva Categoría (opcional)</label>
+                {{ form.nueva_categoria }}
+            </div>
 
             <div class="image-preview">
-                <img id="preview" src="#" alt="Vista previa" style="max-width: 100%; max-height: 100%; display: none;">
+                {% if nota.imagen %}
+                    <img id="preview" src="{{ nota.imagen.url }}" alt="Vista previa" style="max-width: 100%; max-height: 100%;">
+                {% else %}
+                    <img id="preview" src="#" alt="Vista previa" style="max-width: 100%; max-height: 100%; display: none;">
+                {% endif %}
             </div>
 
             <br>
-            <button type="submit" class="btn btn-save">Guardar Nota</button>
+            <button type="submit" class="btn btn-save">Guardar Cambios</button>
         </form>
     </div>
 
@@ -1173,8 +1673,7 @@ from .
     </script>
 {% endblock %}
 ===== nota_detail.html ===== 
-
-<!-- myapp/templates/note_detail.html -->
+<!-- notas/nota_detail.html -->
 {% extends "notas/base.html" %}
 
 {% block title %}Detalles de la Nota{% endblock %}
@@ -1186,9 +1685,6 @@ from .
 
 {% block content %}
     <div class="note-detail-page">
-        <!-- Botón para regresar al inicio -->
-         
-        
         <div class="note-actions">
             <a href="{% url 'notas' %}" class="btn btn-back">Volver Atras</a>
             <a href="{% url 'edit' nota.id %}" class="btn btn-edit">
@@ -1199,7 +1695,6 @@ from .
             </a>
         </div>
 
-        <!-- Sección de detalles de la nota -->
         <div class="note-cover">
             {% if nota.imagen %}
                 <img src="{{ nota.imagen.url }}" alt="Portada de la nota">
@@ -1210,6 +1705,15 @@ from .
 
         <h2 class="note-title">{{ nota.titulo }}</h2>
 
+        <div class="note-categories">
+            <strong>Categorías:</strong>
+            {% for categoria in nota.categorias.all %}
+                {{ categoria.nombre }}{% if not forloop.last %}, {% endif %}
+            {% empty %}
+                Sin categorías
+            {% endfor %}
+        </div>
+
         <div class="note-content">
             <p>{{ nota.descripcion |safe }}</p>
         </div>
@@ -1217,59 +1721,981 @@ from .
 
     <script>
         function confirmDelete(event, url) {
-            event.preventDefault(); // Evita la redirección inmediata
+            event.preventDefault();
             if (confirm("¿Estás seguro de que quieres eliminar esta nota?")) {
-                window.location.href = url; // Redirige al enlace si se confirma
+                window.location.href = url;
             }
-            return false; // Evita la acción por defecto si no se confirma
+            return false;
         }
     </script>
 {% endblock %}
 ===== perfil.html ===== 
-<!-- notas/templates/profile.html -->
 {% extends "notas/base.html" %}
 {% load static %}
-
 {% block head %}
-    <link rel="stylesheet" href="{% static 'notas/css/perfil.css' %}">
+<link rel="stylesheet" href="{% static 'notas/css/perfil.css' %}" />
 {% endblock %}
 
 {% block title %}Perfil - Mi Aplicación{% endblock %}
 
 {% block content %}
-    <div class="profile-page">
-        <!-- Encabezado con botones -->
-        <div class="profile-header">
-            <a href="{% url 'home' %}" class="btn btn-back">Volver al Inicio</a>
-            <a href="{% url 'logout' %}" class="btn btn-logout">Cerrar Sesión</a>
-        </div>
+<div class="profile-page">
+  <!-- Encabezado con botones -->
+  <div class="profile-header">
+    <a href="{% url 'home' %}" class="btn btn-back">Volver al Inicio</a>
+    <a href="{% url 'logout' %}" class="btn btn-logout">Cerrar Sesión</a>
+  </div>
 
-        <!-- Sección del perfil -->
-        <div class="profile-info">
-            <div class="profile-icon">👤</div>
-            <div class="username">{{ user.username }}</div>
-        </div>
+  <!-- Sección del perfil - Versión simplificada -->
+  <div class="profile-info">
+    {% if user.profile.profile_picture %}
+      <img src="{{ user.profile.profile_picture.url }}" 
+           alt="Foto de perfil" 
+           class="profile-picture">
+    {% else %}
+      <div class="profile-icon">👤</div>
+    {% endif %}
+    <div class="username">{{ user.username }}</div>
+  </div>
 
-        <!-- Lista de notas -->
-        <div class="notes-section">
-            <h2>Tus Notas</h2>
-            <ul class="notes-list">
-                {% for nota in notas %}
-                    <li>{{ nota.titulo }}</li>
-                {% empty %}
-                    <li>No tienes notas creadas.</li>
-                {% endfor %}
-            </ul>
-        </div>
-    </div>
-{% endblock %}
+  <!-- Lista de notas -->
+  <div class="notes-section">
+    <h2>Tus Notas</h2>
+    <ul class="notes-list">
+      {% for nota in notas %}
+      <li>{{ nota.titulo }}</li>
+      {% empty %}
+      <li>No tienes notas creadas.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock content %}
+
+
+===== resultado2.txt ===== 
 ===== resultado.txt ===== 
-===== base.html ===== 
-<!-- myapp/templates/base.html -->
-{% load static %}
-<!DOCTYPE html>
-<html lang="es">
-	<head>
-		<meta charset="UTF-8" />
-		<me
+===== resultado.txt ===== 
+
+===== base.css ===== 
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+}
+
+.container {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Estilos para la barra de navegación lateral */
+.sidebar {
+    width: 250px;
+    background-color: #2c3e50;
+    padding: 20px;
+    color: white;
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh; /* Ocupa toda la altura de la ventana */
+    overflow-y: auto; /* Permite desplazamiento interno si el contenido de la barra es largo */
+    font-family: 'Roboto', sans-serif;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.sidebar-header {
+    padding: 20px;
+    text-align: center;
+    border-bottom: 1px solid #34495e;
+    margin-bottom: 20px;
+}
+
+.sidebar-header h2 {
+    margin: 0;
+    font-size: 24px;
+    color: #1abc9c; /* Color turquesa para el título */
+}
+
+.sidebar ul {
+    list-style: none;
+}
+
+.sidebar ul li {
+    margin: 20px 0;
+}
+
+.sidebar ul li a {
+    color: white;
+    text-decoration: none;
+    font-size: 18px;
+    display: block;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.sidebar ul li a:hover {
+    background-color: #34495e;
+}
+
+/* Estilo para la pestaña activa */
+.sidebar ul li a.active {
+    font-weight: bold;
+    background-color: #1abc9c; /* Fondo turquesa para la pestaña activa */
+    border-left: 4px solid #16a085; /* Barra lateral más oscura para énfasis */
+}
+
+/* Estilos para el contenido principal */
+.content {
+    flex: 1;
+    padding: 40px;
+    background-color: #ecf0f1;
+    margin-left: 250px; /* Desplaza el contenido para que no se superponga con la barra fija */
+    min-height: 100vh; /* Asegura que el contenido ocupe toda la altura */
+}
+
+.content h1 {
+    margin-bottom: 20px;
+    color: #2c3e50;
+}
+
+.content p {
+    font-size: 16px;
+    color: #7f8c8d;
+}
+
+===== categorias.css ===== 
+/* notas/static/notas/css/categorias.css */
+.categorias-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 30px;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    font-family: 'Roboto', sans-serif;
+}
+
+.categorias-page h2 {
+    font-size: 28px;
+    color: #2c3e50;
+    margin-bottom: 20px;
+    text-align: center;
+    border-bottom: 2px solid #2c3e50;
+    padding-bottom: 10px;
+}
+
+.btn-create {
+    background-color: #27ae60;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 20px;
+}
+
+.btn-create:hover {
+    background-color: #219653;
+}
+
+.btn-create::before {
+    content: "+";
+    margin-right: 5px;
+}
+
+.categorias-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.categoria-card {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.categoria-card h3 {
+    font-size: 20px;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.categoria-card p {
+    margin: 0;
+    font-size: 16px;
+    color: #7f8c8d;
+}
+
+.btn-delete {
+    background-color: #e74c3c;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-delete:hover {
+    background-color: #c0392b;
+}
+
+.categoria-form {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    font-size: 16px;
+    color: #2c3e50;
+    margin-bottom: 5px;
+    display: block;
+    font-weight: bold;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+    font-family: 'Arial', sans-serif;
+}
+
+.btn-save {
+    background-color: #27ae60;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: block;
+    margin: 0 auto;
+}
+
+.btn-save:hover {
+    background-color: #219653;
+}
+===== create.css ===== 
+/* notas/static/notas/css/create.css */
+.create-note-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 30px;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    position: relative;
+    font-family: 'Roboto', sans-serif;
+}
+
+.create-note-page h2 {
+    font-size: 28px;
+    color: #2c3e50;
+    margin-bottom: 20px;
+    text-align: center;
+    border-bottom: 2px solid #2c3e50;
+    padding-bottom: 10px;
+}
+
+.note-form {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    font-size: 16px;
+    color: #2c3e50;
+    margin-bottom: 5px;
+    display: block;
+    font-weight: bold;
+}
+
+.form-group input[type="text"],
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+    font-family: 'Arial', sans-serif;
+    transition: border-color 0.3s;
+}
+
+.form-group input[type="text"]:focus,
+.form-group textarea:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+}
+
+.form-group .form-control-file {
+    margin-bottom: 15px;
+    padding: 10px;
+    border: 1px dashed #ccc;
+    border-radius: 5px;
+    background-color: #f4f4f4;
+    display: block;
+    width: 100%;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 150px;
+}
+
+.form-group ul {
+    list-style: none;
+    padding: 0;
+}
+
+.form-group ul li {
+    margin-bottom: 10px;
+}
+
+.image-preview {
+    width: 100%;
+    max-width: 400px;
+    height: 250px;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 20px auto;
+    background-color: #f9f9f9;
+    overflow: hidden;
+}
+
+.image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.btn-back {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background-color: #3498db;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-back:hover {
+    background-color: #2980b9;
+}
+
+.btn-save {
+    background-color: #27ae60;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: block;
+    margin: 0 auto;
+}
+
+.btn-save:hover {
+    background-color: #219653;
+}
+
+.btn-save::before {
+    content: "💾";
+    margin-right: 5px;
+}
+===== create_user.css ===== 
+/* Estilo general del contenedor del formulario */
+#card_user {
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: #ffffff; /* Fondo gris claro */
+    border-radius: 20px;
+    box-shadow: -10px 10px 3px 5px #1abc9c8d;
+}
+
+/* Estilo del mensaje de error */
+#error {
+    color: #6C757D; /* Gris oscuro para el texto de error */
+    font-size: 16px;
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+/* Estilo del formulario */
+form {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Estilo de los párrafos generados por form.as_p */
+form p {
+    margin-bottom: 15px;
+}
+
+/* Estilo de las etiquetas */
+form label {
+    display: block;
+    color: #6C757D; /* Gris oscuro para las etiquetas */
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+/* Estilo de los campos de entrada */
+form input[type="text"],
+form input[type="password"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #CED4DA; /* Borde gris claro */
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 14px;
+}
+
+/* Estilo del botón */
+#boton {
+    background-color: #3498db; /* Verde */
+    color: #FFFFFF; /* Texto blanco */
+    border: none;
+    padding: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background-color 0.3s;
+}
+
+#boton:hover {
+    background-color: #2974a5;
+    border: 2px solid #a0a9af; /* Verde más oscuro al pasar el mouse */
+}
+
+/* Estilo para los errores del formulario */
+form .errorlist {
+    color: #DC3545; /* Rojo para los errores */
+    font-size: 12px;
+    margin-top: 5px;
+}
+===== detail.css ===== 
+/* notas/static/notas/css/detail.css */
+.note-detail-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.note-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.btn-back, .btn-edit, .btn-delete {
+    padding: 8px 16px;
+    border-radius: 5px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: background-color 0.3s;
+}
+
+.btn-back {
+    background-color: #3498db;
+    color: white;
+}
+
+.btn-back:hover {
+    background-color: #2980b9;
+}
+
+.btn-edit {
+    background-color: #3498db;
+    color: white;
+}
+
+.btn-edit:hover {
+    background-color: #2980b9;
+}
+
+.btn-delete {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.btn-delete:hover {
+    background-color: #c0392b;
+}
+
+.note-cover {
+    width: 100%;
+    height: auto;
+    background-color: #f0f0f0;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.note-cover img {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}
+
+.note-cover .no-image {
+    color: #7f8c8d;
+    font-size: 18px;
+}
+
+.note-title {
+    font-size: 28px;
+    color: #2c3e50;
+    text-align: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #2c3e50;
+    padding-bottom: 10px;
+}
+
+.note-categories {
+    font-size: 16px;
+    color: #7f8c8d;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.note-content {
+    background-color: white;
+    padding: 20px;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.note-content p {
+    font-size: 16px;
+    color: #7f8c8d;
+    line-height: 1.6;
+}
+
+.note-content img {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block;
+    margin: 0 auto;
+}
+===== index.css ===== 
+
+===== login.css ===== 
+/* myapp/static/notas/css/login.css */
+.login-page {
+    max-width: 400px;
+    margin: 50px auto;
+    padding: 30px;
+    background-color: white;
+    text-align: center;
+    border-radius: 20px;
+    box-shadow: -10px 10px 3px 5px #1abc9c8d;
+}
+
+.login-page h2 {
+    font-size: 28px;
+    color: #2c3e50; /* Color oscuro de la barra lateral */
+    margin-bottom: 20px;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+}
+
+.form-group label {
+    font-size: 16px;
+    color: #2c3e50;
+    margin-bottom: 5px;
+}
+
+.form-group input {
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.form-group input:focus {
+    border-color: #3498db; /* Azul de los botones */
+}
+
+.btn-login {
+    background-color: #3498db; /* Azul de los botones */
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.btn-login:hover {
+    background-color: #2980b9; /* Azul más oscuro al pasar el mouse */
+}
+===== notas.css ===== 
+/* notas/static/notas/css/notas.css */
+.search-bar {
+    width: 100%;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.search-bar form {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.search-bar input[type="text"] {
+    flex: 1;
+    max-width: 400px;
+    padding: 10px 15px;
+    font-size: 16px;
+    color: #2c3e50;
+    background-color: #ffffff;
+    border: 1px solid #ecf0f1;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.search-bar input[type="text"]::placeholder {
+    color: #7f8c8d;
+}
+
+.search-bar input[type="text"]:focus {
+    border-color: #27ae60;
+}
+
+.search-bar button {
+    padding: 10px 20px;
+    font-size: 16px;
+    color: #ffffff;
+    background-color: #27ae60;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.search-bar button:hover {
+    background-color: #219653;
+}
+
+.notes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.notes-header h1 {
+    font-size: 28px;
+    color: #2c3e50;
+}
+
+.notes-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-categorias {
+    background-color: #8e44ad; /* Púrpura para diferenciarlo */
+    color: white;
+    padding: 8px 16px;
+    border-radius: 5px;
+    text-decoration: none;
+    transition: background-color 0.3s;
+}
+
+.btn-categorias:hover {
+    background-color: #732d91;
+}
+
+.btn-create {
+    background-color: #27ae60;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 5px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: background-color 0.3s;
+}
+
+.btn-create:hover {
+    background-color: #219653;
+}
+
+.btn-create span {
+    font-size: 18px;
+}
+
+.notes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.note-card {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.note-card:hover {
+    transform: translateY(-5px);
+}
+
+.note-card h3 {
+    font-size: 20px;
+    margin-bottom: 10px;
+}
+
+.note-card h3 a {
+    color: #2c3e50;
+    text-decoration: none;
+}
+
+.note-card h3 a:hover {
+    color: #3498db;
+}
+
+.note-card p {
+    font-size: 16px;
+    color: #7f8c8d;
+    margin-bottom: 15px;
+}
+
+.note-categories {
+    font-size: 14px;
+    color: #7f8c8d;
+    margin-bottom: 10px;
+}
+
+.note-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-edit, .btn-delete {
+    padding: 8px 16px;
+    border-radius: 5px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: background-color 0.3s;
+}
+
+.btn-edit {
+    background-color: #3498db;
+    color: white;
+}
+
+.btn-edit:hover {
+    background-color: #2980b9;
+}
+
+.btn-delete {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.btn-delete:hover {
+    background-color: #c0392b;
+}
+
+.icon {
+    font-size: 16px;
+}
+===== perfil.css ===== 
+/* myapp/static/css/profile.css */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+}
+
+.profile-page {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos del encabezado */
+.profile-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 30px;
+}
+
+.btn {
+    padding: 10px 20px;
+    text-decoration: none;
+    font-size: 16px;
+    border-radius: 5px;
+    color: white;
+    transition: background-color 0.3s;
+}
+
+.btn-back {
+    background-color: #3498db;
+}
+
+.btn-back:hover {
+    background-color: #2980b9;
+}
+
+.btn-logout {
+    background-color: #e74c3c;
+}
+
+.btn-logout:hover {
+    background-color: #c0392b;
+}
+
+/* Estilos de la sección del perfil - VERSIÓN CORREGIDA */
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 30px;
+    gap: 15px;
+}
+
+.profile-picture {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #27ae60;
+}
+
+.profile-icon {
+    width: 120px;
+    height: 120px;
+    background-color: #27ae60;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 50px;
+    color: white;
+}
+
+.username {
+    font-size: 22px;
+    font-weight: bold;
+    color: #333;
+    padding: 8px 16px;
+    background-color: #f0f0f0;
+    border-radius: 20px;
+}
+
+/* Estilos de la sección de notas */
+.notes-section {
+    background-color: #2980b9;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.notes-section h2 {
+    color: white;
+    font-size: 24px;
+    margin-bottom: 15px;
+}
+
+.notes-list {
+    list-style: none;
+    color: white;
+}
+
+.notes-list li {
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    font-size: 16px;
+}
+
+.notes-list li:last-child {
+    border-bottom: none;
+}
 
