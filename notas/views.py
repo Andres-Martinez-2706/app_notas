@@ -1,5 +1,5 @@
 from django.shortcuts import render,redirect,get_object_or_404
-from .forms import NotaForm, UserCreationFormWithImage, ProfileImageForm
+from .forms import NotaForm, UserCreationFormWithImage
 from .models import Nota, Categoria
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
