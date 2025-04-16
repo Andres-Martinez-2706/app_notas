@@ -28,7 +28,7 @@ def create_user(request):
 
 def index(request):
     print(request.user)
-    return render(request,'notas/base.html')
+    return render(request,'notas/index.html')
 
 def logout_view(request):
     logout(request)  # Cierra la sesión del usuario

@@ -1,4 +1,4 @@
-<!-- myapp/templates/login.html -->
+<!-- notas/index.html -->
 {% extends "notas/base.html" %}
 
 {% block title %}Inicio{% endblock %}
@@ -9,6 +9,42 @@
 {% endblock %}
 
 {% block content %}
+    <div class="welcome-section">
+        <div class="overlay"></div>
+        <div class="content-wrapper">
+            <h1 class="animated-title">📚 Bienvenido a App de Notas</h1>
+            <p class="intro-text">
+                ¡Organiza tus ideas con estilo! <strong>App de Notas</strong> es una aplicación sencilla y funcional creada como proyecto de clase para la asignatura de Programación Web. Regístrate, inicia sesión y comienza a gestionar tus notas de manera eficiente.
+            </p>
 
+            <div class="features">
+                <h2>✨ ¿Qué puedes hacer?</h2>
+                <ul>
+                    <li><span class="icon">✅</span> Regístrate e inicia sesión de forma segura.</li>
+                    <li><span class="icon">📝</span> Crea, edita y elimina notas con facilidad.</li>
+                    <li><span class="icon">🏷️</span> Organiza tus notas con categorías personalizadas.</li>
+                    <li><span class="icon">🔍</span> Busca tus notas por título o contenido.</li>
+                    <li><span class="icon">🖼️</span> Añade imágenes y formato con un editor de texto enriquecido.</li>
+                </ul>
+            </div>
 
+            <div class="cta-buttons">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'notas' %}" class="btn btn-start">Ver Mis Notas</a>
+                {% else %}
+                    <a href="{% url 'register' %}" class="btn btn-start">¡Comienza Ahora!</a>
+                    <a href="{% url 'login' %}" class="btn btn-login">Iniciar Sesión</a>
+                {% endif %}
+            </div>
+
+            <p class="credits">Hecho con 💻 y ☕ por Andres Martinez y Harold Duran - 2025</p>
+        </div>
+
+        <!-- Elementos decorativos animados -->
+        <div class="floating-elements">
+            <div class="floating-note note-1"></div>
+            <div class="floating-note note-2"></div>
+            <div class="floating-note note-3"></div>
+        </div>
+    </div>
 {% endblock %}

@@ -1,0 +1,213 @@
+/* notas/static/notas/css/index.css */
+.welcome-section {
+    position: relative;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(45deg, #1abc9c, #3498db, #9b59b6, #e74c3c);
+    background-size: 400%;
+    animation: gradientAnimation 15s ease infinite;
+    overflow: hidden;
+    padding: 20px;
+}
+
+/* Animación de fondo degradado */
+@keyframes gradientAnimation {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Capa de superposición para oscurecer el fondo */
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1;
+}
+
+/* Contenedor del contenido */
+.content-wrapper {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    max-width: 800px;
+    padding: 40px;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    animation: fadeIn 1.5s ease-in-out;
+}
+
+/* Animación de entrada para el contenido */
+@keyframes fadeIn {
+    0% { opacity: 0; transform: translateY(50px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Título animado con efecto de escritura */
+.animated-title {
+    font-size: 48px;
+    color: #2c3e50;
+    margin-bottom: 20px;
+    position: relative;
+    display: inline-block;
+    overflow: hidden;
+    white-space: nowrap;
+    border-right: 4px solid #27ae60;
+    animation: typing 3s steps(30, end), blink 0.75s step-end infinite;
+}
+
+@keyframes typing {
+    from { width: 0; }
+    to { width: 100%; }
+}
+
+@keyframes blink {
+    50% { border-color: transparent; }
+}
+
+/* Texto introductorio */
+.intro-text {
+    font-size: 18px;
+    color: #7f8c8d;
+    line-height: 1.6;
+    margin-bottom: 30px;
+    animation: fadeIn 2s ease-in-out;
+}
+
+.intro-text strong {
+    color: #27ae60;
+}
+
+/* Sección de características */
+.features {
+    margin-bottom: 40px;
+}
+
+.features h2 {
+    font-size: 28px;
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+
+.features ul {
+    list-style: none;
+    padding: 0;
+}
+
+.features li {
+    font-size: 16px;
+    color: #34495e;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.features .icon {
+    font-size: 20px;
+}
+
+/* Botones de acción */
+.cta-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.btn {
+    padding: 12px 30px;
+    font-size: 18px;
+    text-decoration: none;
+    border-radius: 50px;
+    transition: transform 0.3s, box-shadow 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-start {
+    background: linear-gradient(45deg, #27ae60, #2ecc71);
+    color: white;
+}
+
+.btn-login {
+    background: linear-gradient(45deg, #3498db, #2980b9);
+    color: white;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.3);
+    transition: left 0.5s;
+}
+
+.btn:hover::before {
+    left: 100%;
+}
+
+.btn:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Créditos */
+.credits {
+    font-size: 14px;
+    color: #7f8c8d;
+    margin-top: 20px;
+}
+
+/* Elementos decorativos flotantes (notas) */
+.floating-elements {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+.floating-note {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background: url('https://img.icons8.com/ios-filled/50/ffffff/sticky-notes.png') no-repeat center;
+    background-size: contain;
+    opacity: 0.7;
+    animation: float 10s infinite ease-in-out;
+}
+
+.note-1 {
+    top: 20%;
+    left: 10%;
+    animation-delay: 0s;
+}
+
+.note-2 {
+    top: 60%;
+    left: 80%;
+    animation-delay: 3s;
+}
+
+.note-3 {
+    top: 80%;
+    left: 30%;
+    animation-delay: 6s;
+}
+
+@keyframes float {
+    0% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-50px) rotate(10deg); }
+    100% { transform: translateY(0) rotate(0deg); }
+}
