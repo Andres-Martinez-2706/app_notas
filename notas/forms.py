@@ -53,3 +53,10 @@ class UserCreationFormWithImage(UserCreationForm):
             Profile.objects.create(user=user, profile_picture=profile_picture if profile_picture else None)
         return user
     
+class ProfileImageForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = ['profile_picture']
+        labels = {
+            'profile_picture': 'Cambiar foto de perfil',
+        }
