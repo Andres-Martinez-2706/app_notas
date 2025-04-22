@@ -35,11 +35,9 @@ Este proyecto fue creado para aprender y aplicar conceptos básicos de desarroll
 
 ## 📸 Capturas de pantalla
 
-| Página de Notas | Crear Nota |
+| Página de Notas | Página de Inicio |
 |-----------------|------------|
-| ![Página de Notas](ruta/a/notas.png) | ![Crear Nota](ruta/a/crear-nota.png) |
-
-*(Nota: Reemplaza las rutas de las imágenes con capturas reales de tu proyecto si deseas incluirlas.)*
+| ![Página de Notas](media/Notas.png) | ![Pagina de inicio](media/Inicio.png) |
 
 ---
 
