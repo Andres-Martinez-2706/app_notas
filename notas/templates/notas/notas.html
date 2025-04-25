@@ -11,7 +11,7 @@
 
 {% block content %}
     <div class="search-bar">
-        <form method="get" action="{% url 'notas' %}">
+        <form method="get" action="{% url 'notas' %}"  id="filtro-form">
             <input
                 type="text"
                 name="q"
@@ -19,6 +19,15 @@
                 value="{{ query }}"
             />
             <button type="submit">Buscar</button>
+            <select name="categoria">
+                <option value="">🏷️ Todas las categorías</option>
+                {% for categoria in categorias %}
+                    <option value="{{ categoria.id }}" {% if categoria_seleccionada == categoria.id %}selected{% endif %}>
+                        {{ categoria.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+            
         </form>
     </div>
 
@@ -73,5 +82,11 @@
             }
             return false;
         }
+        document.addEventListener("DOMContentLoaded", function () {
+            const categoriaSelect = document.querySelector('select[name="categoria"]');
+            categoriaSelect.addEventListener("change", function () {
+                document.getElementById("filtro-form").submit();
+            });
+        });
     </script>
 {% endblock %}

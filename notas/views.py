@@ -36,29 +36,42 @@ def logout_view(request):
 
 @login_required
 def notas_view(request):
-    # Obtener el término de búsqueda
-    query = request.GET.get('q', '').strip()  # Elimina espacios vacíos
-    print("🔍 Buscando:", repr(query))  # Imprime con repr para depuración
+    # Obtener búsqueda y categoría desde GET
+    query = request.GET.get('q', '').strip()
+    categoria_id = request.GET.get('categoria')
 
-    # Filtrar notas según el tipo de usuario
+    print("🔍 Buscando:", repr(query))
+    print("📂 Categoría filtrada:", categoria_id)
+
+    # Filtrar por usuario
     if request.user.is_superuser or request.user.is_staff:
-        notas = Nota.objects.all()  # Superusuarios y staff ven todas las notas
+        notas = Nota.objects.all()
     else:
-        notas = Nota.objects.filter(author=request.user)  # Usuarios normales ven solo sus notas
+        notas = Nota.objects.filter(author=request.user)
 
-    # Aplicar el filtro de búsqueda si hay un término
+    # Filtro por búsqueda
     if query:
         notas = notas.filter(
             Q(titulo__icontains=query) | Q(descripcion__icontains=query)
         )
 
-    # Ordenar las notas por fecha de creación (más reciente primero)
+    # Filtro por categoría (si se seleccionó una)
+    if categoria_id:
+        notas = notas.filter(categorias__id=categoria_id)
+
+    # Orden por fecha
     notas = notas.order_by('-created_at')
 
-    # Depuración: Mostrar las notas filtradas
-    print("Notas filtradas:", list(notas.values('id', 'titulo', 'descripcion')))
+    # Categorías disponibles para el select
+    categorias = Categoria.objects.filter(Q(usuarios=request.user) | Q(es_predeterminada=True))
 
-    return render(request, 'notas/notas.html', {'notas': notas, 'query': query})
+    return render(request, 'notas/notas.html', {
+        'notas': notas,
+        'query': query,
+        'categorias': categorias,
+        'categoria_seleccionada': int(categoria_id) if categoria_id else None
+    })
+
 
 @login_required
 def perfil(request):
